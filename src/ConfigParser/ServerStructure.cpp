@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: Invalid date        by                   #+#    #+#             */
-/*   Updated: 2025/08/15 15:18:26 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/17 22:22:11 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -125,6 +125,30 @@ void ConfigParser::handleErrorPage(const ConfigNode &node, ServerConfig &server)
 	}
 }
 
+// MAX BODY SIZE
+void ConfigParser::handleBodySize(const ConfigNode &node, LocConfig &location) {
+	// megabits or giga
+	int factor = 1;
+	char last = su::back(node.args_[0]);
+	if (std::tolower(last) == 'k')
+		factor = 1024;
+	else if (std::tolower(last) == 'm')
+		factor = 1024 * 1024;
+	else if (std::tolower(last) == 'g')
+		factor = 1024 * 1024 * 1024;
+
+	std::string maxBody = node.args_[0];
+	if (factor > 1)
+		maxBody = su::rtrim(maxBody.substr(0, maxBody.size() - 1));
+
+	std::istringstream iss(maxBody);
+	size_t maxBodyFactor;
+	iss >> maxBodyFactor;
+	location.client_max_body_size = maxBodyFactor * factor;
+	location.body_size_set = true;
+}
+
+// Root, Methods, Upload path, autoindex, CGI and max body size can be defined server level -> for inheritance
 // Root, Methods, Upload path, autoindex, CGI and max body size can be defined server level -> for inheritance
 void ConfigParser::handleForInherit(const ConfigNode &node, LocConfig &location) {
 	if (node.name_ == "root")
@@ -182,6 +206,8 @@ void ConfigParser::handleIndex(const ConfigNode &node, LocConfig &location) {
 	else
 		location.index = node.args_[0];
 }
+
+
 
 // Return directive
 void ConfigParser::handleReturn(const ConfigNode &node, LocConfig &location) {
