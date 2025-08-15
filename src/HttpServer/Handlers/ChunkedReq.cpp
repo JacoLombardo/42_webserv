@@ -5,10 +5,11 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/08/08 10:39:43 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/15 13:12:09 by htharrau         ###   ########.fr       */
+/*   Created: Invalid date        by                   #+#    #+#             */
+/*   Updated: 2025/08/15 15:18:52 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
+
 
 #include "src/HttpServer/Structs/WebServer.hpp"
 #include "src/HttpServer/Structs/Connection.hpp"

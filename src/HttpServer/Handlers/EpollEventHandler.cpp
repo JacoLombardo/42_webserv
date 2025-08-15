@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 14:06:48 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/15 13:12:44 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/15 15:17:46 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,8 +54,16 @@ void WebServer::handleClientEvent(int fd, uint32_t event_mask) {
 		if (event_mask & EPOLLOUT) {
 			if (conn->response_ready)
 				sendResponse(conn);
-			if (!conn->keep_persistent_connection) 
+			if (!conn->keep_persistent_connection)
 				closeConnection(conn);
+		}
+		if (event_mask & (EPOLLERR | EPOLLHUP)) {
+			_lggr.error("Error/hangup event for fd: " + su::to_string(fd));
+			closeConnection(conn);
+		}
+		if (event_mask & (EPOLLERR | EPOLLHUP)) {
+			_lggr.error("Error/hangup event for fd: " + su::to_string(fd));
+			closeConnection(conn);
 		}
 	} else {
 		_lggr.debug("Ignoring event for unknown fd: " + su::to_string(fd));
@@ -67,14 +75,11 @@ void WebServer::handleClientRecv(Connection *conn) {
 	conn->updateActivity();
 
 	char buffer[BUFFER_SIZE];
-	ssize_t total_bytes_read = 0;
 
 	ssize_t bytes_read = receiveData(conn->fd, buffer, sizeof(buffer) - 1);
 
 	if (bytes_read > 0) {
-		total_bytes_read += bytes_read;
-
-		if (!processReceivedData(conn, buffer, bytes_read, total_bytes_read)) {
+		if (!processReceivedData(conn, buffer, bytes_read)) {
 			return;
 		}
 	} else if (bytes_read == 0) {
@@ -103,28 +108,55 @@ ssize_t WebServer::receiveData(int client_fd, char *buffer, size_t buffer_size) 
 	return bytes_read;
 }
 
-bool WebServer::processReceivedData(Connection *conn, const char *buffer, ssize_t bytes_read,
-                                    ssize_t total_bytes_read) {
-	conn->read_buffer += std::string(buffer);
+bool WebServer::processReceivedData(Connection *conn, const char *buffer, ssize_t bytes_read) {
+	static int i = 0;
+
+	if (conn->state == Connection::READING_HEADERS) {
+		conn->read_buffer += std::string(buffer, bytes_read);
+		std::cerr << i++ << " calls of processReceivedData (HEADERS)" << std::endl;
+	} else if (conn->state == Connection::READING_BODY) {
+		conn->body_data.insert(conn->body_data.end(),
+		                       reinterpret_cast<const unsigned char *>(buffer),
+		                       reinterpret_cast<const unsigned char *>(buffer + bytes_read));
+		conn->body_bytes_read += bytes_read;
+
+		std::cerr << i++ << " calls of processReceivedData (BODY)" << std::endl;
+		std::cerr << "Body data size: " << conn->body_data.size() << " bytes" << std::endl;
+
+		_lggr.debug("Read " + su::to_string(conn->body_bytes_read) + " bytes of body so far");
+	} else {
+		// For chunked data and other states, keep existing behavior
+		conn->read_buffer += std::string(buffer, bytes_read);
+		if (conn->state == Connection::READING_BODY) {
+			conn->body_bytes_read += bytes_read;
+		}
+		std::cerr << i++ << " calls of processReceivedData (OTHER)" << std::endl;
+	}
 
 	_lggr.debug("Checking if request was completed");
 	if (isRequestComplete(conn)) {
-		if (!epollManage(EPOLL_CTL_MOD, conn->fd, EPOLLIN | EPOLLOUT)) {
+		if (!epollManage(EPOLL_CTL_MOD, conn->fd, EPOLLOUT)) {
 			return false;
 		}
 		_lggr.debug("Request was completed");
 		if (conn->chunked && conn->state == Connection::CONTINUE_SENT) {
 			return true;
 		}
-		// pb: no locConfig match yet
-		if (!conn->getServerConfig()->serverInfiniteBodySize() &&
-		    total_bytes_read > static_cast<ssize_t>(conn->getServerConfig()->getServerMaxBodySize())) {
+		if (!conn->getServerConfig()->infiniteBodySize() &&
+		    conn->body_bytes_read > conn->getServerConfig()->getMaxBodySize()) {
 			_lggr.debug("Request is too large");
 			handleRequestTooLarge(conn, bytes_read);
 			return false;
 		}
 
 		return handleCompleteRequest(conn);
+	}
+
+	if (conn->state == Connection::READING_BODY && !conn->getServerConfig()->infiniteBodySize() &&
+	    conn->body_bytes_read > conn->getServerConfig()->getMaxBodySize()) {
+		_lggr.debug("Request body exceeds size limit");
+		handleRequestTooLarge(conn, bytes_read);
+		return false;
 	}
 
 	return true;
