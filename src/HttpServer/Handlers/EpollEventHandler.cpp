@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 14:06:48 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/15 15:17:46 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/16 19:44:00 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,8 +20,8 @@ void WebServer::processEpollEvents(const struct epoll_event *events, int event_c
 		const uint32_t event_mask = events[i].events;
 		const int fd = events[i].data.fd;
 
-		_lggr.debug("Epoll event on fd=" + su::to_string(fd) + " (" +
-		            describeEpollEvents(event_mask) + ")");
+		// _lggr.debug("Epoll event on fd=" + su::to_string(fd) + " (" +
+		//             describeEpollEvents(event_mask) + ")");
 
 		if (isListeningSocket(fd)) {
 			// TODO: NULL check
@@ -56,10 +56,6 @@ void WebServer::handleClientEvent(int fd, uint32_t event_mask) {
 				sendResponse(conn);
 			if (!conn->keep_persistent_connection)
 				closeConnection(conn);
-		}
-		if (event_mask & (EPOLLERR | EPOLLHUP)) {
-			_lggr.error("Error/hangup event for fd: " + su::to_string(fd));
-			closeConnection(conn);
 		}
 		if (event_mask & (EPOLLERR | EPOLLHUP)) {
 			_lggr.error("Error/hangup event for fd: " + su::to_string(fd));
@@ -111,6 +107,8 @@ ssize_t WebServer::receiveData(int client_fd, char *buffer, size_t buffer_size) 
 bool WebServer::processReceivedData(Connection *conn, const char *buffer, ssize_t bytes_read) {
 	static int i = 0;
 
+	_lggr.debug("MAX BODY : bytes read " + su::to_string( conn->body_bytes_read) 
+			+ " / " + su::to_string(conn->getServerConfig()->getServerMaxBodySize()));
 	if (conn->state == Connection::READING_HEADERS) {
 		conn->read_buffer += std::string(buffer, bytes_read);
 		std::cerr << i++ << " calls of processReceivedData (HEADERS)" << std::endl;
@@ -142,22 +140,23 @@ bool WebServer::processReceivedData(Connection *conn, const char *buffer, ssize_
 		if (conn->chunked && conn->state == Connection::CONTINUE_SENT) {
 			return true;
 		}
-		if (!conn->getServerConfig()->infiniteBodySize() &&
-		    conn->body_bytes_read > conn->getServerConfig()->getMaxBodySize()) {
-			_lggr.debug("Request is too large");
-			handleRequestTooLarge(conn, bytes_read);
-			return false;
-		}
+		// if (!conn->getServerConfig()->serverInfiniteBodySize() &&
+		//     conn->body_bytes_read > conn->getServerConfig()->getServerMaxBodySize()) {
+		// 	_lggr.debug("Request is too large : bytes read " + su::to_string( conn->body_bytes_read) 
+		// 	+ " / " + su::to_string(conn->getServerConfig()->getServerMaxBodySize()));
+		// 	handleRequestTooLarge(conn, bytes_read);
+		// 	return false;
+		// }
 
 		return handleCompleteRequest(conn);
 	}
 
-	if (conn->state == Connection::READING_BODY && !conn->getServerConfig()->infiniteBodySize() &&
-	    conn->body_bytes_read > conn->getServerConfig()->getMaxBodySize()) {
-		_lggr.debug("Request body exceeds size limit");
-		handleRequestTooLarge(conn, bytes_read);
-		return false;
-	}
+	// if (conn->state == Connection::READING_BODY && !conn->getServerConfig()->serverInfiniteBodySize() &&
+	//     conn->body_bytes_read > conn->getServerConfig()->getServerMaxBodySize()) {
+	// 	_lggr.debug("Request body exceeds size limit");
+	// 	handleRequestTooLarge(conn, bytes_read);
+	// 	return false;
+	// }
 
 	return true;
 }

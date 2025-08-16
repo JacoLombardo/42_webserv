@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 13:35:52 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/15 15:19:26 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/16 19:34:11 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,35 @@
 #include "src/HttpServer/Structs/Connection.hpp"
 #include "src/ConfigParser/ConfigParser.hpp"
 #include "src/HttpServer/HttpServer.hpp"
+
+
+Logger Response::logg_("Config.log", Logger::DEBUG, true);
+
+Response::Response()
+    : version("HTTP/1.1"),
+      status_code(0),
+      reason_phrase("Not Ready") {}
+
+Response::Response(uint16_t code)
+    : version("HTTP/1.1"),
+      status_code(code) {
+	initFromStatusCode(code);
+}
+
+Response::Response(uint16_t code, const std::string &response_body)
+    : version("HTTP/1.1"),
+      status_code(code),
+      body(response_body) {
+	initFromStatusCode(code);
+}
+
+Response::Response(uint16_t code, Connection *conn)
+    : version("HTTP/1.1"),
+      status_code(code) {
+	initFromCustomErrorPage(code, conn);
+}
+
+
 
 // Local helpers for MIME detection to avoid depending on WebServer
 static std::string getExtensionForMime(const std::string &path) {
@@ -50,31 +79,6 @@ static std::string detectContentTypeLocal(const std::string &path) {
 	return "application/octet-stream";
 }
 
-Logger Response::tmplogg_("Response", Logger::DEBUG);
-
-Response::Response()
-    : version("HTTP/1.1"),
-      status_code(0),
-      reason_phrase("Not Ready") {}
-
-Response::Response(uint16_t code)
-    : version("HTTP/1.1"),
-      status_code(code) {
-	initFromStatusCode(code);
-}
-
-Response::Response(uint16_t code, const std::string &response_body)
-    : version("HTTP/1.1"),
-      status_code(code),
-      body(response_body) {
-	initFromStatusCode(code);
-}
-
-Response::Response(uint16_t code, Connection *conn)
-    : version("HTTP/1.1"),
-      status_code(code) {
-	initFromCustomErrorPage(code, conn);
-}
 
 std::string Response::toString() const {
 	std::ostringstream response_stream;
@@ -132,11 +136,18 @@ Response Response::methodNotAllowed(const std::string& allowed) {
 	}
 	return resp; }
 
-Response Response::ContentTooLarge() { return Response(413); }
+Response Response::contentTooLarge() { return Response(413); }
 
 Response Response::internalServerError() { return Response(500); }
 
 Response Response::notImplemented() { return Response(501); }
+
+Response Response::badGateway() { return Response(502); }
+
+Response Response::gatewayTimeout() { return Response(504); }
+
+Response Response::HttpNotSupported() { return Response(505); }
+
 
 // OVErLOAD
 
@@ -154,11 +165,17 @@ Response Response::methodNotAllowed(Connection *conn, const std::string& allowed
 	return resp; }
 
 
-Response Response::ContentTooLarge(Connection *conn) { return Response(413, conn); }
+Response Response::contentTooLarge(Connection *conn) { return Response(413, conn); }
 
 Response Response::internalServerError(Connection *conn) { return Response(500, conn); }
 
 Response Response::notImplemented(Connection *conn) { return Response(501, conn); }
+
+Response Response::badGateway(Connection *conn) { return Response(502, conn); }
+
+Response Response::gatewayTimeout(Connection *conn) { return Response(504, conn); }
+
+Response Response::HttpNotSupported(Connection *conn) { return Response(505, conn); }
 
 std::string Response::getReasonPhrase(uint16_t code) const {
 	switch (code) {
@@ -188,6 +205,8 @@ std::string Response::getReasonPhrase(uint16_t code) const {
 		return "Method Not Allowed";
 	case 408:
 		return "Request Timeout";
+	case 411:
+		return "Length required";
 	case 413:
 		return "Content Too Large";
 	case 414:
@@ -200,6 +219,10 @@ std::string Response::getReasonPhrase(uint16_t code) const {
 		return "Bad Gateway";
 	case 503:
 		return "Service Unavailable";
+	case 504:
+		return "CGI Time-out";
+	case 505:
+		return "HTTP version not supported";
 	default:
 		return "Unknown Status";
 	}
@@ -210,21 +233,21 @@ void Response::initFromCustomErrorPage(uint16_t code, Connection *conn) {
 	reason_phrase = getReasonPhrase(code);
 
 	if (!conn || !conn->getServerConfig() || !conn->getServerConfig()->hasErrorPage(code)) {
-		tmplogg_.logWithPrefix(Logger::DEBUG, "Response",
+		logg_.logWithPrefix(Logger::DEBUG, "Response",
 		                       "No custom error page for " + su::to_string(code));
-		tmplogg_.logWithPrefix(Logger::DEBUG, "Response",
+		logg_.logWithPrefix(Logger::DEBUG, "Response",
 		                       "Creating the default error page for " + su::to_string(code));
 		initFromStatusCode(code);
 		return;
 	}
-	tmplogg_.logWithPrefix(Logger::DEBUG, "Response",
+	logg_.logWithPrefix(Logger::DEBUG, "Response",
 	                       "A custom error page exists for " + su::to_string(code));
 	// todo check path again
 	std::string fullPath =
 	    conn->getServerConfig()->getPrefix() + conn->getServerConfig()->getErrorPage(code);
 	std::ifstream errorFile(fullPath.c_str());
 	if (!errorFile.is_open()) {
-		tmplogg_.logWithPrefix(Logger::WARNING, "Response",
+		logg_.logWithPrefix(Logger::WARNING, "Response",
 		                       "Custom error page " + fullPath + " could not be opened.");
 		initFromStatusCode(code);
 		return;
@@ -236,7 +259,7 @@ void Response::initFromCustomErrorPage(uint16_t code, Connection *conn) {
 	setContentLength(body.length());
 	setContentType(detectContentTypeLocal(fullPath));
 	errorFile.close();
-	tmplogg_.logWithPrefix(Logger::DEBUG, "Response",
+	logg_.logWithPrefix(Logger::DEBUG, "Response",
 	                       "Custom error page " + su::to_string(code) + " has been loaded.");
 }
 
@@ -244,7 +267,7 @@ void Response::initFromStatusCode(uint16_t code) {
 	reason_phrase = getReasonPhrase(code);
 	if (code >= 400) {
 		if (body.empty()) {
-			tmplogg_.logWithPrefix(Logger::DEBUG, "Response",
+			logg_.logWithPrefix(Logger::DEBUG, "Response",
 			                       "No custom error page for " + su::to_string(code) +
 			                           " could be used or exist. Generating the default page now.");
 			std::ostringstream html;
@@ -281,7 +304,7 @@ void Response::initFromStatusCode(uint16_t code) {
 			body = html.str();
 			setContentLength(body.length());
 			setContentType("text/html");
-			tmplogg_.logWithPrefix(Logger::DEBUG, "Response",
+			logg_.logWithPrefix(Logger::DEBUG, "Response",
 			                       "Content-Type set to: " + headers["Content-Type"]);
 		}
 	}

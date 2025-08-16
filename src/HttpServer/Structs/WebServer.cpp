@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 13:46:05 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/14 17:56:24 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/16 19:45:07 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,7 +86,7 @@ void WebServer::run() {
 
 		if (event_count > 0) {
 			processEpollEvents(events, event_count);
-			_lggr.debug("Processed " + su::to_string(event_count) + " events");
+			// _lggr.debug("Processed " + su::to_string(event_count) + " events");
 			if (event_count == MAX_EVENTS) {
 				_lggr.warn("Hit MAX_EVENTS limit (" + su::to_string(MAX_EVENTS) +
 				           "), may have more events pending");

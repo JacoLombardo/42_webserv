@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/19 14:47:40 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/14 17:52:31 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/16 18:10:03 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@
 #include <fstream> // for ifstream
 #include <functional>
 #include <iostream>
+#include <iomanip>
 #include <map> // for map
 #include <netdb.h>
 #include <netinet/in.h>

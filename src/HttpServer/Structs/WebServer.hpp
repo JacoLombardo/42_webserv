@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServer.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 13:44:09 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/15 11:13:30 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/16 18:30:31 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -138,7 +138,10 @@ class WebServer {
 	void handleDirectoryRequest(ClientRequest &req, Connection *conn, bool end_slash);
 	void handleFileRequest(ClientRequest &req, Connection *conn, bool end_slash);
 	bool handleFileSystemErrors(FileType file_type, const std::string& full_path, Connection *conn);
-	bool setupRequestContext(ClientRequest &req, Connection *conn);
+	bool normalizePath(ClientRequest &req, Connection *conn);
+	bool matchLocation(ClientRequest &req, Connection *conn);
+
+
 	void processValidRequest(ClientRequest &req, Connection *conn);
 
 	bool reconstructRequest(Connection *conn);
@@ -190,6 +193,8 @@ class WebServer {
 	std::string buildFullPath(const std::string &uri, LocConfig *Location);
 
 	// HANDLERS
+	static std::string getExtension(const std::string &path);
+	static std::string detectContentType(const std::string &path);
 
 	/* Handlers/ChunkedReq.cpp */
 
@@ -250,7 +255,7 @@ class WebServer {
 	/// \param conn The connection to send response to.
 	/// \param dir_path The response object containing the path
 	/// \returns Response object containing the requested resource or error.
-	Response handleDirectoryRequest(Connection *conn, const std::string &dir_path);
+	Response respDirectoryRequest(Connection *conn, const std::string &fullDirPath);
 
 	/// Prepares response data for transmission to client : directory listing
 	/// \param conn The connection to send response to.
@@ -262,17 +267,14 @@ class WebServer {
 	/// \param conn The connection to send response to.
 	/// \param dir_path The full path to the file to send.
 	/// \returns Response object containing the requested resource or error.
-	Response handleFileRequest(Connection *conn, const std::string &dir_path);
+	Response respFileRequest(Connection *conn, const std::string &fullFilePath);
 
 	/// Handles Return directives
 	/// \param req The GET request to process.
 	/// \param code The status code to send back.
 	/// \param target The uri or url to send.
 	/// \returns Response object containing the requested resource or error.
-	Response handleReturnDirective(Connection *conn, uint16_t code, std::string target);
-
-	static std::string getExtension(const std::string &path);
-	static std::string detectContentType(const std::string &path);
+	Response respReturnDirective(Connection *conn, uint16_t code, std::string target);
 
 	/* EpollEventHandler.cpp */
 
@@ -311,12 +313,6 @@ class WebServer {
 	bool processReceivedData(Connection *conn, const char *buffer, ssize_t bytes_read);
 
 	/* Handlers/MethodsHandler.cpp */
-
-	/* Handlers/ResponseHandler.cpp */
-
-	Response respDirectoryRequest(Connection *conn, const std::string &fullDirPath);
-	Response respFileRequest(Connection *conn, const std::string &fullFilePath);
-	Response respReturnDirective(Connection *conn, uint16_t code, std::string target);
 
 	/// Prepares response data for transmission to client.
 	/// \param conn The connection to send response to.

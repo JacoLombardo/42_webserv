@@ -6,17 +6,17 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 13:52:39 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/15 09:17:28 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/16 19:05:45 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ConfigParser.hpp"
 
 // Constructor - initialize valid directives
-ConfigParser::ConfigParser() {
-	logg_.setLogLevel(Logger::DEBUG);
+ConfigParser::ConfigParser()  : logg_("Config.log", Logger::DEBUG, true) {
 	initValidDirectives();
 }
+
 
 void ConfigParser::initValidDirectives() {
 	validDirectives_.clear();

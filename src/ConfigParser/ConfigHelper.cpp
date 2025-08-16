@@ -6,11 +6,12 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 13:54:29 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/15 13:15:22 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/16 19:02:13 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ConfigParser.hpp"
+#include <iomanip>
 
 // Remove comments and trim
 std::string ConfigParser::preProcess(const std::string &line) const {
@@ -152,6 +153,22 @@ void ConfigParser::printTree(const ConfigNode &node, const std::string &prefix, 
 	}
 }
 
+
+std::string humanReadableBytes(size_t bytes) {
+    const char* units[] = {"bytes", "KB", "MB", "GB", "TB", "PB"};
+    size_t unitIndex = 0;
+    double size = static_cast<double>(bytes);
+
+    while (size >= 1024 && unitIndex < 5) {
+        size /= 1024;
+        ++unitIndex;
+    }
+
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(1) << size << "" << units[unitIndex];
+    return out.str();
+}
+
 ////////////////
 // PRINT STRUCT
 void ConfigParser::printServers(const std::vector<ServerConfig> &servers, std::ostream &os) const {
@@ -175,7 +192,7 @@ void ConfigParser::printLocationConfig(const LocConfig &loc, std::ostream &os) c
 		os << "    Index: " << loc.index << "\n";
 	}
 
-	os << "    Max body size: " << loc.client_max_body_size << " bytes\n";
+	os << "    Max body size: " << humanReadableBytes(loc.client_max_body_size) << "\n";
 
 	// ADD THIS: Print upload_path if it's set
 	if (!loc.upload_path.empty()) {
@@ -216,7 +233,7 @@ void ConfigParser::printServerConfig(const ServerConfig &server, std::ostream &o
 			os << "    " << it->first << " -> " << it->second << "\n";
 		}
 	}
-	os << "  Maximum body size all loc: " << server.maximum_body_size << " bytes\n\n";
+	os << "  Max of max body size all loc: " << humanReadableBytes(server.maximum_body_size) << "\n\n";
 
 	if (!server.locations.empty()) {
 		for (size_t i = 0; i < server.locations.size(); ++i) {
