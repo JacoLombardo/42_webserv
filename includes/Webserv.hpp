@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/19 14:47:40 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/16 18:10:03 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/17 20:49:51 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,8 +46,9 @@
 #include <utility>     // for makepair
 #include <vector>      // for vector
 
-// Global error status variable
-extern uint16_t g_error_status;
+
+enum FileType { ISDIR, ISREG, NOT_FOUND_404, PERMISSION_DENIED_403, FILE_SYSTEM_ERROR_500 };
+enum MaxBody { DEFAULT, INFINITE, SPECIFIED };
 
 #define CHUNK_SIZE 500
 

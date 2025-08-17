@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Connection.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 13:38:20 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/15 11:15:59 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/17 19:39:30 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,9 @@ class Connection {
 		READING_HEADERS,  ///< Reading request headers
 		REQUEST_COMPLETE, ///< Complete request received
 		READING_BODY,     ///< Reading request body, when Content-Length > 0
-
+		
+		ERROR_READY,     ///< After headers are read, we check for 413
+		
 		CONTINUE_SENT,         ///< 100-Continue response sent
 		READING_CHUNK_SIZE,    ///< Reading chunk size line
 		READING_CHUNK_DATA,    ///< Reading chunk data

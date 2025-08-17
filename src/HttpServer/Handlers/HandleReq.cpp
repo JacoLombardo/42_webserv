@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 12:56:57 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/16 18:32:48 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/17 19:25:08 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "src/HttpServer/Structs/Connection.hpp"
 #include "src/HttpServer/Structs/Response.hpp"
 #include "src/HttpServer/HttpServer.hpp"
+#include "src/Utils/ServerUtils.hpp"
 
 
 bool WebServer::handleFileSystemErrors(FileType file_type, const std::string& full_path, Connection *conn) {
@@ -92,40 +93,6 @@ void  WebServer::handleFileRequest(ClientRequest &req, Connection *conn, bool en
 }
 
 
-std::string WebServer::getExtension(const std::string &path) {
-	std::size_t dot_pos = path.find_last_of('.');
-	std::size_t qm_pos = path.find_first_of('?');
-	if (qm_pos != std::string::npos && dot_pos < qm_pos)
-		return path.substr(dot_pos, qm_pos - dot_pos);
-	else if (qm_pos == std::string::npos && dot_pos != std::string::npos)
-		return path.substr(dot_pos);
-	return "";
-}
-
-std::string WebServer::detectContentType(const std::string &path) {
-
-	std::map<std::string, std::string> cTypes;
-	cTypes[".css"] = "text/css";
-	cTypes[".js"] = "application/javascript";
-	cTypes[".html"] = "text/html";
-	cTypes[".htm"] = "text/html";
-	cTypes[".json"] = "application/json";
-	cTypes[".png"] = "image/png";
-	cTypes[".jpg"] = "image/jpeg";
-	cTypes[".jpeg"] = "image/jpeg";
-	cTypes[".gif"] = "image/gif";
-	cTypes[".svg"] = "image/svg+xml";
-	cTypes[".ico"] = "image/x-icon";
-	cTypes[".txt"] = "text/plain";
-	cTypes[".pdf"] = "application/pdf";
-	cTypes[".zip"] = "application/zip";
-
-	std::string ext = getExtension(path);
-	std::map<std::string, std::string>::const_iterator it = cTypes.find(ext);
-	if (it != cTypes.end())
-		return it->second;
-	return "application/octet-stream"; // default binary stream
-}
 
 // struct dirent {
 //     ino_t          d_ino;       // Inode number

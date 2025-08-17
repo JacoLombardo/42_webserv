@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 14:10:22 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/16 19:33:22 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/17 21:31:57 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "src/HttpServer/Structs/Connection.hpp"
 #include "src/HttpServer/Structs/Response.hpp"
 #include "src/HttpServer/HttpServer.hpp"
+#include "src/Utils/ServerUtils.hpp"
 
 /* Request handlers */
 
@@ -161,6 +162,16 @@ bool WebServer::isRequestComplete(Connection *conn) {
 		_lggr.debug(
 		    su::to_string(conn->content_length - static_cast<ssize_t>(conn->body_data.size())) +
 		    " bytes left to receive");
+			
+		// check max body size : config vs header request
+		if (!conn->getServerConfig()->serverInfiniteBodySize() 
+		    && conn->body_data.size() > conn->getServerConfig()->getServerMaxBodySize()) {
+			 _lggr.debug("Request body exceeds size limit");
+			handleRequestTooLarge(conn, conn->body_data.size());
+			conn->state = Connection::ERROR_READY;
+			return true;
+		}
+			
 		if (static_cast<ssize_t>(conn->body_data.size()) >= conn->content_length) {
 			_lggr.debug("Read full content-length: " + su::to_string(conn->body_data.size()) +
 			            " bytes received");
@@ -170,6 +181,10 @@ bool WebServer::isRequestComplete(Connection *conn) {
 		}
 		return false;
 
+	case Connection::ERROR_READY:
+		return true;
+	
+		
 	case Connection::CONTINUE_SENT:
 		_lggr.debug("isRequestComplete->CONTINUE_SENT");
 		conn->state = Connection::READING_CHUNK_SIZE;
@@ -238,12 +253,12 @@ bool WebServer::reconstructRequest(Connection *conn) {
 
 
 bool WebServer::parseRequest(Connection *conn, ClientRequest &req) {
-	_lggr.debug("Parsing request: " + conn->toString());
-	if (!RequestParsingUtils::parseRequest(conn->read_buffer, req)) {
+	_lggr.debug("Parsing request: " + req.toMiniString());
+	uint16_t error_code = RequestParsingUtils::parseRequest(conn->read_buffer, req);
+	_lggr.debug("Error code post request parsing : " + su::to_string(error_code));
+	if (error_code != 0) {
 		_lggr.error("Parsing of the request failed.");
-		_lggr.debug("FD " + su::to_string(conn->fd) + " " + conn->toString());
-		if (g_error_status != 501 && g_error_status != 505)
-		prepareResponse(conn, Response(g_error_status, conn));
+		prepareResponse(conn, Response(error_code, conn));
 		// closeConnection(conn);
 		return false;
 	}

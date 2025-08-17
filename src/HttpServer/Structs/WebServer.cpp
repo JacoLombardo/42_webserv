@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 13:46:05 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/16 19:45:07 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/17 20:46:07 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,6 @@
 
 bool WebServer::_running;
 static bool interrupted = false;
-uint16_t g_error_status = 0;
 
 
 WebServer::WebServer(std::vector<ServerConfig> &confs)

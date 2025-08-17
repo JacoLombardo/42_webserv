@@ -3,16 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   RequestParser.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/17 15:43:17 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/07 14:12:49 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/17 21:30:48 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "RequestParser.hpp"
 
-std::string ClientRequest::toString() {
+std::string ClientRequest::toString() const {
 	std::ostringstream oss;
 
 	oss << "ClientRequest {method: " << method << ", ";
@@ -23,7 +23,7 @@ std::string ClientRequest::toString() {
 
 	oss << "headers: [";
 	for (std::map<std::string, std::string>::const_iterator it = headers.begin();
-	     it != headers.end(); ++it) {
+		 it != headers.end(); ++it) {
 		oss << it->first << ":" << it->second << ", ";
 	}
 	oss << "], ";
@@ -39,6 +39,26 @@ std::string ClientRequest::toString() {
 	oss << "clfd: " << clfd << "}";
 
 	return (oss.str());
+}
+
+std::string ClientRequest::toMiniString() const {
+	std::ostringstream oss;
+
+	// Request line
+	oss << method << " " << uri << " " << version << "\n";
+
+	// Print Host header if present
+	std::map<std::string, std::string>::const_iterator it;
+
+	it = headers.find("host");
+	if (it != headers.end())
+		oss << "Host: " << it->second << "\n";
+
+	it = headers.find("connection");
+	if (it != headers.end())
+		oss << "Connection: " << it->second << "\n";
+
+	return oss.str();
 }
 
 /* Utils */
@@ -58,14 +78,14 @@ std::string RequestParsingUtils::trimSide(const std::string &s, int type) {
 	}
 	if (type == 2 || type == 3) {
 		while (!result.empty() &&
-		       (result[result.size() - 1] == ' ' || result[result.size() - 1] == '\t'))
+			   (result[result.size() - 1] == ' ' || result[result.size() - 1] == '\t'))
 			result.erase(result.size() - 1);
 	}
 	return (result);
 }
 
 /* Trailing headers parser */
-bool RequestParsingUtils::parseTrailingHeaders(std::istringstream &stream, ClientRequest &request) {
+uint16_t RequestParsingUtils::parseTrailingHeaders(std::istringstream &stream, ClientRequest &request) {
 	Logger logger;
 	std::string line;
 	logger.logWithPrefix(Logger::INFO, "HTTP", "Parsing trailing headers");
@@ -76,47 +96,48 @@ bool RequestParsingUtils::parseTrailingHeaders(std::istringstream &stream, Clien
 			line.erase(line.length() - 1);
 
 		if (line.empty())
-			return (true);
+			return 0;
 
 		size_t colon = line.find(':');
 		if (colon == std::string::npos) {
 			logger.logWithPrefix(Logger::WARNING, "HTTP", "Invalid trailing header");
-			return (false);
+			return 400;
 		}
 		std::string name = trimSide(line.substr(0, colon), 1);
 		std::string value = trimSide(line.substr(colon + 1), 3);
 
 		if (name.empty()) {
 			logger.logWithPrefix(Logger::WARNING, "HTTP", "Empty header name");
-			return (false);
+			return 400;
 		}
 		// Check for spaces in header name (invalid according to HTTP spec)
 		if (name.find(' ') != std::string::npos || name.find('\t') != std::string::npos) {
 			logger.logWithPrefix(Logger::WARNING, "HTTP", "Invalid header name (contains spaces)");
-			return (false);
+			return 400;
 		}
 		// Check for valid header name characters
 		for (size_t i = 0; i < name.length(); ++i) {
 			char c = name[i];
 			if (!std::isalnum(c) && c != '-' && c != '_') {
 				logger.logWithPrefix(Logger::WARNING, "HTTP",
-				                     "Invalid character in header name: " + name);
-				return (false);
+									 "Invalid character in header name: " + name);
+				return 400;
 			}
 		}
 		// Check for valid header to be in trailing
 		if (su::to_lower(name) == "te" || su::to_lower(name) == "connection") {
 			logger.logWithPrefix(Logger::WARNING, "HTTP", "Invalid headers to be in trailing");
-			return (false);
+			return 400;
 		}
-		if (!checkHeader(name, value, request))
-			return (false);
+		uint16_t header_error = checkHeader(name, value, request);
+		if (header_error != 0)
+			return header_error;
 		request.headers[su::to_lower(name)] = value;
 	}
-	return (true);
+	return 0;
 }
 
-bool checkFileUpload(ClientRequest &request) {
+uint16_t checkFileUpload(ClientRequest &request) {
 	Logger logger;
 	bool type = false;
 	bool bound = false;
@@ -128,20 +149,20 @@ bool checkFileUpload(ClientRequest &request) {
 		bound = true;
 	if (type && bound) {
 		request.file_upload = true;
-		return (true);
+		return 0;
 	} else if (type && !bound) {
 		logger.logWithPrefix(Logger::WARNING, "HTTP", "File upload request missing boundaries");
-		return (false);
+		return 400;
 	} else
-		return (true);
+		return 0;
 }
 
 /* Parser */
-bool RequestParsingUtils::parseRequest(const std::string &raw_request, ClientRequest &request) {
+uint16_t RequestParsingUtils::parseRequest(const std::string &raw_request, ClientRequest &request) {
 	Logger logger;
 	if (raw_request.empty()) {
 		logger.logWithPrefix(Logger::WARNING, "HTTP", "No request received");
-		return (false);
+		return 400;
 	}
 
 	request.chunked_encoding = false;
@@ -150,27 +171,32 @@ bool RequestParsingUtils::parseRequest(const std::string &raw_request, ClientReq
 	std::istringstream stream(raw_request);
 
 	// Parse request line
-	if (!parseReqLine(stream, request))
-		return (false);
+	uint16_t error_code = parseReqLine(stream, request);
+	if (error_code != 0)
+		return error_code;
 
 	// Parse headers
-	if (!parseHeaders(stream, request))
-		return (false);
+	error_code = parseHeaders(stream, request);
+	if (error_code != 0)
+		return error_code;
 
 	// Parse body
-	if (!parseBody(stream, request))
-		return (false);
+	error_code = parseBody(stream, request);
+	if (error_code != 0)
+		return error_code;
 
 	// Parse trailing headers (if any)
 	if (request.chunked_encoding) {
-		if (!parseTrailingHeaders(stream, request))
-			return (false);
+		error_code = parseTrailingHeaders(stream, request);
+		if (error_code != 0)
+			return error_code;
 	}
 
 	// Check if file upload
-	if (!checkFileUpload(request))
-		return (false);
+	error_code = checkFileUpload(request);
+	if (error_code != 0)
+		return error_code;
 
 	logger.logWithPrefix(Logger::INFO, "HTTP", "Request parsing completed");
-	return (true);
+	return 0;
 }

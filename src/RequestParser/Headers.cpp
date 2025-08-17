@@ -3,40 +3,40 @@
 /*                                                        :::      ::::::::   */
 /*   Headers.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/25 10:46:05 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/07 14:18:06 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/17 21:36:18 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "RequestParser.hpp"
 
 /* Checks */
-bool RequestParsingUtils::checkHeader(std::string &name, std::string &value,
+uint16_t RequestParsingUtils::checkHeader(std::string &name, std::string &value,
                                       ClientRequest &request) {
 	Logger logger;
 
 	// Check header size
 	if (name.size() > MAX_HEADER_NAME_LENGTH) {
 		logger.logWithPrefix(Logger::WARNING, "HTTP", "Header name too big");
-		return (false);
+		return 400;
 	} else if (value.size() > MAX_HEADER_VALUE_LENGTH) {
 		logger.logWithPrefix(Logger::WARNING, "HTTP", "Header value too big");
-		return (false);
+		return 400;
 	}
 	// Check for duplicate header
 	if (findHeader(request, su::to_lower(name))) {
 		logger.logWithPrefix(Logger::WARNING, "HTTP", "Duplicate header present");
-		return (false);
+		return 400;
 	}
 	if (su::to_lower(name) == "transfer-encoding" && su::to_lower(value) == "chunked")
 		request.chunked_encoding = true;
-	return (true);
+	return 0;
 }
 
 /* Parser */
-bool RequestParsingUtils::parseHeaders(std::istringstream &stream, ClientRequest &request) {
+uint16_t RequestParsingUtils::parseHeaders(std::istringstream &stream, ClientRequest &request) {
 	Logger logger;
 	std::string line;
 	logger.logWithPrefix(Logger::DEBUG, "HTTP", "Parsing headers");
@@ -45,43 +45,44 @@ bool RequestParsingUtils::parseHeaders(std::istringstream &stream, ClientRequest
 		// Check header count limit
 		if (++header_count > 100) {
 			logger.logWithPrefix(Logger::WARNING, "HTTP", "Too many headers");
-			return (false);
+			return 400;
 		}
 
-		if (!checkNTrimLine(line))
-			return (false);
+		uint16_t trim_error = checkNTrimLine(line);
+		if (trim_error != 0)
+			return trim_error;
 
 		if (line.empty()) {
 			// Check for host header
 			if (!findHeader(request, "host")) {
 				logger.logWithPrefix(Logger::WARNING, "HTTP", "No Host header present");
-				return (false);
+				return 400;
 			}
 			// Check for Transfer-encoding=chunked and Content-length headers
 			if (request.chunked_encoding && findHeader(request, "content-length")) {
 				logger.logWithPrefix(Logger::WARNING, "HTTP",
 				                     "Content-length header present with chunked encoding");
-				return (false);
+				return 400;
 			}
-			return (true);
+			return 0;
 		}
 
 		size_t colon = line.find(':');
 		if (colon == std::string::npos) {
 			logger.logWithPrefix(Logger::WARNING, "HTTP", "Invalid header format");
-			return (false);
+			return 400;
 		}
 		std::string name = trimSide(line.substr(0, colon), 1);
 		std::string value = trimSide(line.substr(colon + 1), 3);
 
 		if (name.empty()) {
 			logger.logWithPrefix(Logger::WARNING, "HTTP", "Empty header name");
-			return (false);
+			return 400;
 		}
 		// Check for spaces in header name (invalid according to HTTP spec)
 		if (name.find(' ') != std::string::npos || name.find('\t') != std::string::npos) {
 			logger.logWithPrefix(Logger::WARNING, "HTTP", "Invalid header name (contains spaces)");
-			return (false);
+			return 400;
 		}
 		// Check for valid header name characters
 		for (size_t i = 0; i < name.length(); ++i) {
@@ -89,13 +90,14 @@ bool RequestParsingUtils::parseHeaders(std::istringstream &stream, ClientRequest
 			if (!std::isalnum(c) && c != '-' && c != '_') {
 				logger.logWithPrefix(Logger::WARNING, "HTTP",
 				                     "Invalid character in header name: " + name);
-				return (false);
+				return 400;
 			}
 		}
-		if (!checkHeader(name, value, request))
-			return (false);
+		uint16_t header_error = checkHeader(name, value, request);
+		if (header_error != 0)
+			return header_error;
 		request.headers[su::to_lower(name)] = value;
 	}
 	logger.logWithPrefix(Logger::WARNING, "HTTP", "Missing final CRLF");
-	return (false);
+	return 400;
 }

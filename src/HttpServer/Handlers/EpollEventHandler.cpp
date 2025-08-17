@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 14:06:48 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/16 19:44:00 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/17 18:28:55 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -140,23 +140,8 @@ bool WebServer::processReceivedData(Connection *conn, const char *buffer, ssize_
 		if (conn->chunked && conn->state == Connection::CONTINUE_SENT) {
 			return true;
 		}
-		// if (!conn->getServerConfig()->serverInfiniteBodySize() &&
-		//     conn->body_bytes_read > conn->getServerConfig()->getServerMaxBodySize()) {
-		// 	_lggr.debug("Request is too large : bytes read " + su::to_string( conn->body_bytes_read) 
-		// 	+ " / " + su::to_string(conn->getServerConfig()->getServerMaxBodySize()));
-		// 	handleRequestTooLarge(conn, bytes_read);
-		// 	return false;
-		// }
-
 		return handleCompleteRequest(conn);
 	}
-
-	// if (conn->state == Connection::READING_BODY && !conn->getServerConfig()->serverInfiniteBodySize() &&
-	//     conn->body_bytes_read > conn->getServerConfig()->getServerMaxBodySize()) {
-	// 	_lggr.debug("Request body exceeds size limit");
-	// 	handleRequestTooLarge(conn, bytes_read);
-	// 	return false;
-	// }
 
 	return true;
 }

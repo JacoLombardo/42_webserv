@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 14:05:50 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/16 19:33:22 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/17 20:46:01 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,9 +35,6 @@ class Response {
 	inline void setStatus(uint16_t code) {
 		status_code = code;
 		reason_phrase = getReasonPhrase(code);
-		if (code >= 400) {
-			g_error_status = code;
-		}
 	}
 
 	inline void setHeader(const std::string &name, const std::string &value) {

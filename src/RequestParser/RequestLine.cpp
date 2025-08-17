@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/25 10:33:32 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/15 08:39:03 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/17 20:27:51 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,30 +74,29 @@ bool decodeNValidateUri(const std::string &uri, std::string &decoded) {
 }
 
 /* Checks */
-bool RequestParsingUtils::checkReqLine(ClientRequest &request) {
+uint16_t RequestParsingUtils::checkReqLine(ClientRequest &request) {
 	Logger logger;
 
 	if (request.method.empty() || request.uri.empty() || request.version.empty()) {
 		logger.logWithPrefix(Logger::WARNING, "HTTP", "Empty component in request line");
-		return (false);
+		return 400;
 	}
 
 	if (request.method.find(' ') != std::string::npos ||
 	    request.uri.find(' ') != std::string::npos ||
 	    request.version.find(' ') != std::string::npos) {
 		logger.logWithPrefix(Logger::WARNING, "HTTP", "Extra spaces in request line");
-		return (false);
+		return 400;
 	}
 
 	if (request.uri.length() > MAX_URI_LENGTH) {
-		g_error_status = 414;
 		logger.logWithPrefix(Logger::WARNING, "HTTP", "Uri too big");
-		return (false);
+		return 414;
 	}
 	std::string decoded_uri;
 	if (!decodeNValidateUri(request.uri, decoded_uri)) {
 		logger.logWithPrefix(Logger::WARNING, "HTTP", "Invalid uri");
-		return (false);
+		return 400;
 	}
 	request.uri = decoded_uri;
 	size_t qm = request.uri.find_first_of('?');
@@ -111,22 +110,21 @@ bool RequestParsingUtils::checkReqLine(ClientRequest &request) {
 	// case 505: "HTTP Version Not Supported"
 	if (request.version != "HTTP/1.1") {
 		logger.logWithPrefix(Logger::WARNING, "HTTP", "Invalid HTTP version");
-		g_error_status = 505;
-		return (false);
+		return 505;
 	}
 
-	return (true);
+	return 0;
 }
 
 /* Parsing */
-bool RequestParsingUtils::parseReqLine(std::istringstream &stream, ClientRequest &request) {
+uint16_t RequestParsingUtils::parseReqLine(std::istringstream &stream, ClientRequest &request) {
 	Logger logger;
 	std::string line;
 	logger.logWithPrefix(Logger::DEBUG, "HTTP", "Parsing request line");
 
 	if (!std::getline(stream, line)) {
 		logger.logWithPrefix(Logger::WARNING, "HTTP", "No request line present");
-		return (false);
+		return 400;
 	}
 
 	if (!line.empty() && line[line.length() - 1] == '\r')
@@ -138,26 +136,26 @@ bool RequestParsingUtils::parseReqLine(std::istringstream &stream, ClientRequest
 	size_t first_space = trimmed_line.find(' ');
 	if (first_space == std::string::npos) {
 		logger.logWithPrefix(Logger::WARNING, "HTTP", "Request line missing spaces");
-		return (false);
+		return 400;
 	}
 
 	size_t second_space = trimmed_line.find(' ', first_space + 1);
 	if (second_space == std::string::npos) {
 		logger.logWithPrefix(Logger::WARNING, "HTTP", "Invalid request line format");
-		return (false);
+		return 400;
 	}
 
 	// Check for extra spaces between components
 	if (first_space == 0 || second_space == first_space + 1) {
 		logger.logWithPrefix(Logger::WARNING, "HTTP",
 		                     "Extra spaces between request line components");
-		return (false);
+		return 400;
 	}
 
 	// Check for trailing spaces or extra spaces after version
 	if (trimmed_line.find(' ', second_space + 1) != std::string::npos) {
 		logger.logWithPrefix(Logger::WARNING, "HTTP", "Extra spaces after HTTP version");
-		return (false);
+		return 400;
 	}
 
 	// Manual parsing to ensure exactly one space between components
