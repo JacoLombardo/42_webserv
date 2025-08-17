@@ -6,11 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 12:56:57 by jalombar          #+#    #+#             */
-<<<<<<< HEAD
-/*   Updated: 2025/08/17 22:26:26 by htharrau         ###   ########.fr       */
-=======
-/*   Updated: 2025/08/17 19:25:08 by htharrau         ###   ########.fr       */
->>>>>>> 96bc738 (Fix: removed the global variable for errors - instead the parsing request sends back the code or 0)
+/*   Updated: 2025/08/17 22:29:27 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
