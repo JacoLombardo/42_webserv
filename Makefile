@@ -6,7 +6,7 @@
 #    By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: Invalid date        by         __/       #+#    #+#              #
-#    Updated: 2025/08/08 14:22:22 by jalombar         ###   ########.fr        #
+#    Updated: 2025/08/18 14:55:12 by jalombar         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -130,6 +130,7 @@ clean: ## Clean objects and dependencies
 	$(RM) -r $(OBJ_DIR)
 	$(RM) $(DEPENDS)
 	$(RM) -r $(DEP_DIR)
+	$(RM) -r www/uploads
 
 fclean: clean ## Restore project to initial state
 	$(RM) $(TARGET)

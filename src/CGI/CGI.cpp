@@ -6,7 +6,7 @@
 /*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/31 09:07:54 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/13 14:32:28 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/18 14:27:56 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,8 +22,12 @@ CGI::CGI(ClientRequest &request, LocConfig *locConfig)
 		setEnv("CONTENT_TYPE", request.headers["content-type"]);
 		setEnv("CONTENT_LENGTH", request.headers["content-length"]);
 	}
-	if (request.method == "POST" || request.method == "DELETE")
-		setEnv("UPLOAD_DIR", "../.." + locConfig->getUploadPath());
+	if (request.method == "POST" || request.method == "DELETE") {
+		if (request.extension == ".php")
+			setEnv("UPLOAD_DIR", "../.." + locConfig->getUploadPath());
+		else
+			setEnv("UPLOAD_DIR", locConfig->getUploadPath().substr(1));
+	}
 	setEnv("SERVER_SOFTWARE", "CustomCGI/1.0");
 	setEnv("GATEWAY_INTERFACE", "CGI/1.1");
 	setEnv("REDIRECT_STATUS", "200");

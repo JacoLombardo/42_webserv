@@ -11,8 +11,8 @@ $deleted = false;
 $error_message = '';
 $exit_status = '200 OK';
 
-// Only allow POST requests with filename
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['filename'])) {
+// Only allow DELETE requests with filename
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['_method']) && $_POST['_method'] === 'DELETE') {
 	$filename = $_POST['filename'];
 	
 	// Security checks

@@ -1,67 +1,90 @@
-import cgi
-import cgitb
-import html
 import os
+import sys
+import re
+from html import escape
+import cgi
 from datetime import datetime
-from pathlib import Path
 
-# Enable CGI error reporting
-cgitb.enable()
-
-upload_dir = os.environ.get('UPLOAD_DIR', './uploads/')
-if not upload_dir.endswith('/'):
-	upload_dir += '/'
-
+# Default values
 deleted = False
+filename = ''
 error_message = ''
+exit_status = '200 OK'
 
-# Create FieldStorage instance to parse form data
-form = cgi.FieldStorage()
+def log_error(message):
+	try:
+		with open('script.log', 'a') as log_file:
+			timestamp = datetime.now().isoformat()
+			log_file.write(f"{timestamp} {message}\n")
+	except:
+		pass  # Ignore logging errors
 
-# Only allow POST requests with filename
-if os.environ.get('REQUEST_METHOD') == 'POST' and 'filename' in form:
-	filename = form['filename'].value
-	
-	# Security checks
-	filename = os.path.basename(filename)  # Prevent directory traversal
-	
-	if filename:
-		file_path = upload_dir + filename
+# Get environment variables
+upload_dir = os.environ.get('UPLOAD_DIR', './uploads/')
+request_method = os.environ.get('REQUEST_METHOD', 'GET')
+
+# Ensure upload directory exists
+if not os.path.exists(upload_dir):
+	os.makedirs(upload_dir, 0o755)
+
+# Handle file deletion
+if request_method == 'POST':
+	try:
+		# Create FieldStorage instance to parse form data
+		form = cgi.FieldStorage()
 		
-		# Verify before deletion
-		if os.path.exists(file_path) and os.access(file_path, os.W_OK):
-			try:
-				os.unlink(file_path)
-				deleted = True
-			except Exception as e:
-				deleted = False
-				error_message = 'Delete operation failed (server error)'
+		if 'filename' in form:
+			filename = form['filename'].value
+			
+			if filename:
+				# Sanitize filename - prevent directory traversal
+				filename = os.path.basename(filename)
+				filename = re.sub(r'[^a-zA-Z0-9._-]', '', filename)
+				
+				if filename:
+					file_path = os.path.join(upload_dir, filename)
+					
+					# Verify file exists and is writable before deletion
+					if os.path.exists(file_path) and os.access(file_path, os.W_OK):
+						try:
+							os.unlink(file_path)
+							deleted = True
+							exit_status = '200 OK'
+							
+						except Exception as e:
+							error_message = 'Delete operation failed (server error)'
+							exit_status = '500 Internal Server Error'
+					else:
+						error_message = 'File not found or not writable'
+						exit_status = '404 Not Found'
+				else:
+					error_message = 'Invalid filename after sanitization'
+					exit_status = '400 Bad Request'
+			else:
+				error_message = 'No filename provided'
+				exit_status = '400 Bad Request'
 		else:
-			error_message = 'File not found or not writable'
-	else:
-		error_message = 'Invalid filename'
+			error_message = 'No filename field found'
+			exit_status = '400 Bad Request'
+			
+	except Exception as e:
+		error_message = f'Delete processing error: {str(e)}'
+		exit_status = '500 Internal Server Error'
+		
 else:
-	error_message = 'Invalid request method or missing filename'
+	error_message = 'Invalid request method'
+	exit_status = '405 Method Not Allowed'
 
 if error_message:
-	try:
-		with open('../../script.log', 'a') as stderr:
-			stderr.write(f"{datetime.now().isoformat()} {error_message}\n")
-	except:
-		pass
+	log_error(error_message)
 
-# Print HTTP headers
-print("Content-Type: text/html\n")
-
-# Generate HTML
-title = 'Deleted' if deleted else 'Error'
-
-html_content = f'''<!DOCTYPE html>
+# Generate HTML content
+html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<title>{title}</title>
+	<title>{"File Deleted" if deleted else "Delete Error"}</title>
 	<link rel="stylesheet" href="/styles.css" />
 	<link rel="icon" type="image/x-icon" href="/favicon.png">
 </head>
@@ -72,20 +95,20 @@ html_content = f'''<!DOCTYPE html>
 		<div class="floating-element"></div>
 	</div>
 
-	<div class="container">'''
+	<div class="container">"""
 
 if deleted:
-	html_content += f'''
+	html_content += f"""
 		<div style="font-size: 3rem; margin-bottom: 1rem;">🗑️</div>
-		<h1 class="title">File deleted</h1>
-		<p class="subtitle">{html.escape(filename)} was removed</p>'''
+		<h1 class="title">File "{escape(filename)}" successfully deleted!</h1>
+		<p class="subtitle">The file has been removed from the server</p>"""
 else:
-	html_content += f'''
+	html_content += f"""
 		<div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
 		<h1 class="title">Deletion Failed</h1>
-		<p class="subtitle">{html.escape(error_message)}</p>'''
+		<p class="subtitle">{escape(error_message)}</p>"""
 
-html_content += '''
+html_content += """
 		<div style="margin-top: 2rem;">
 			<form method="POST" action="upload.py" style="display: inline;">
 				<button type="submit" name="back" value="1" class="button">← Back to Upload</button>
@@ -93,6 +116,16 @@ html_content += '''
 		</div>
 	</div>
 </body>
-</html>'''
+</html>"""
 
+# Calculate content length
+content_length = len(html_content.encode('utf-8'))
+
+# Send headers
+print(f"HTTP/1.1 {exit_status}")
+print("Content-Type: text/html; charset=UTF-8")
+print(f"Content-Length: {content_length}")
+print()  # Empty line to separate headers from content
+
+# Send content
 print(html_content)

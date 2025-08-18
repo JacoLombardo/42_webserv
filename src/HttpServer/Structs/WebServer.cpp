@@ -3,22 +3,21 @@
 /*                                                        :::      ::::::::   */
 /*   WebServer.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
+/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 13:46:05 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/14 17:56:24 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/18 14:54:03 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "WebServer.hpp"
+#include "src/HttpServer/HttpServer.hpp"
 #include "src/HttpServer/Structs/Connection.hpp"
 #include "src/HttpServer/Structs/Response.hpp"
-#include "src/HttpServer/HttpServer.hpp"
 
 bool WebServer::_running;
 static bool interrupted = false;
 uint16_t g_error_status = 0;
-
 
 WebServer::WebServer(std::vector<ServerConfig> &confs)
     : _epoll_fd(-1),
@@ -142,11 +141,12 @@ bool WebServer::resolveAddress(const ServerConfig &config, struct addrinfo **res
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 
-	int status =
-	    getaddrinfo(config.getHost().c_str(), su::to_string<int>(config.getPort()).c_str(), &hints, result);
+	int status = getaddrinfo(config.getHost().c_str(), su::to_string<int>(config.getPort()).c_str(),
+	                         &hints, result);
 
 	if (status != 0) {
-		_lggr.logWithPrefix(Logger::ERROR, config.getHost() + ":" + su::to_string<int>(config.getPort()),
+		_lggr.logWithPrefix(Logger::ERROR,
+		                    config.getHost() + ":" + su::to_string<int>(config.getPort()),
 		                    "Failed to get address info");
 		return false;
 	}
@@ -154,9 +154,11 @@ bool WebServer::resolveAddress(const ServerConfig &config, struct addrinfo **res
 }
 
 bool WebServer::createAndConfigureSocket(ServerConfig &config, const struct addrinfo *addr_info) {
-	config.setServerFD(socket(addr_info->ai_family, addr_info->ai_socktype, addr_info->ai_protocol));
+	config.setServerFD(
+	    socket(addr_info->ai_family, addr_info->ai_socktype, addr_info->ai_protocol));
 	if (config.getServerFD() == -1) {
-		_lggr.logWithPrefix(Logger::ERROR, config.getHost() + ":" + su::to_string<int>(config.getPort()),
+		_lggr.logWithPrefix(Logger::ERROR,
+		                    config.getHost() + ":" + su::to_string<int>(config.getPort()),
 		                    "Failed to create socket");
 		return false;
 	}
@@ -202,13 +204,15 @@ bool WebServer::setNonBlocking(int fd) {
 
 bool WebServer::bindAndListen(const ServerConfig &config, const struct addrinfo *addr_info) {
 	if (bind(config.getServerFD(), addr_info->ai_addr, addr_info->ai_addrlen) == -1) {
-		_lggr.logWithPrefix(Logger::ERROR, config.getHost() + ":" + su::to_string<int>(config.getPort()),
-		                    "Failed to bind socket to port " + su::to_string<int>(config.getPort()));
+		_lggr.logWithPrefix(
+		    Logger::ERROR, config.getHost() + ":" + su::to_string<int>(config.getPort()),
+		    "Failed to bind socket to port " + su::to_string<int>(config.getPort()));
 		return false;
 	}
 
 	if (listen(config.getServerFD(), _backlog) == -1) {
-		_lggr.logWithPrefix(Logger::ERROR, config.getHost() + ":" + su::to_string<int>(config.getPort()),
+		_lggr.logWithPrefix(Logger::ERROR,
+		                    config.getHost() + ":" + su::to_string<int>(config.getPort()),
 		                    "Failed to listen on socket");
 		return false;
 	}
