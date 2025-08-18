@@ -6,7 +6,7 @@
 /*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/31 10:18:53 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/13 14:20:11 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/18 16:02:29 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@ bool CGIUtils::runCGIScript(ClientRequest &req, CGI &cgi) {
 	char **envp = cgi.toEnvp();
 	if (!envp) {
 		logger.logWithPrefix(Logger::ERROR, "CGI", "Failed to create environment");
-		return (false);
+		return (setExitStatus(502));
 	}
 
 	// 3. Create pipes with error checking
@@ -27,7 +27,7 @@ bool CGIUtils::runCGIScript(ClientRequest &req, CGI &cgi) {
 	if (pipe(input_pipe) == -1) {
 		logger.logWithPrefix(Logger::ERROR, "CGI", "Failed to create input pipe");
 		cgi.freeEnvp(envp);
-		return (false);
+		return (setExitStatus(502));
 	}
 
 	if (pipe(output_pipe) == -1) {
@@ -35,7 +35,7 @@ bool CGIUtils::runCGIScript(ClientRequest &req, CGI &cgi) {
 		close(input_pipe[0]);
 		close(input_pipe[1]);
 		cgi.freeEnvp(envp);
-		return (false);
+		return (setExitStatus(502));
 	}
 	cgi.setOutputFd(output_pipe[0]);
 
@@ -49,7 +49,7 @@ bool CGIUtils::runCGIScript(ClientRequest &req, CGI &cgi) {
 		close(output_pipe[0]);
 		close(output_pipe[1]);
 		cgi.freeEnvp(envp);
-		return (false);
+		return (setExitStatus(502));
 	}
 
 	if (pid == 0) {
@@ -62,6 +62,9 @@ bool CGIUtils::runCGIScript(ClientRequest &req, CGI &cgi) {
 		close(output_pipe[0]);
 		close(input_pipe[0]);
 		close(output_pipe[1]);
+
+		// Set alarm for timeout
+		alarm(3);
 
 		// Execute the CGI script
 		char *argv[] = {(char *)cgi.getInterpreter(), (char *)cgi.getScriptPath(), NULL};
@@ -78,25 +81,6 @@ bool CGIUtils::runCGIScript(ClientRequest &req, CGI &cgi) {
 	// Free environment in parent (child has its own copy after fork)
 	cgi.freeEnvp(envp);
 
-	usleep(10000); // 10ms delay to let execve complete or fail
-
-	// Check if execve failed
-	int status;
-	pid_t wait_result = waitpid(pid, &status, WNOHANG);
-	if (wait_result > 0) {
-		// Child exited immediately - execve likely failed
-		logger.logWithPrefix(Logger::ERROR, "CGI", "CGI script failed to execute");
-		close(input_pipe[1]);
-		close(output_pipe[0]);
-		return (false);
-	} else if (wait_result == -1) {
-		// waitpid error
-		logger.logWithPrefix(Logger::ERROR, "CGI", "Error checking child process status");
-		close(input_pipe[1]);
-		close(output_pipe[0]);
-		return (false);
-	}
-
 	// 6. Send POST data if any
 	if (req.method == "POST") {
 		logger.logWithPrefix(Logger::INFO, "CGI", "Handling POST request");
@@ -109,13 +93,37 @@ bool CGIUtils::runCGIScript(ClientRequest &req, CGI &cgi) {
 					logger.logWithPrefix(Logger::WARNING, "CGI",
 					                     "Failed to write request body to CGI script");
 					close(input_pipe[1]);
-					return (false);
+					return (setExitStatus(502));
 				};
 				total_written += written;
 			}
 		}
 	}
 	close(input_pipe[1]);
+
+	// Check if execve failed
+	int status;
+	pid_t wait_result = waitpid(pid, &status, 0);
+	if (wait_result > 0) {
+		// Child exited immediately - execve likely failed
+		if (WIFSIGNALED(status) && WTERMSIG(status) == SIGALRM) {
+			logger.logWithPrefix(Logger::ERROR, "CGI", "CGI script timeout");
+			g_exit_status = 504;
+			close(output_pipe[0]);
+			return (false);
+		} else {
+			logger.logWithPrefix(Logger::ERROR, "CGI", "CGI script failed to execute");
+			close(output_pipe[0]);
+			return (setExitStatus(502));
+		}
+	} else if (wait_result == -1) {
+		// waitpid error
+		logger.logWithPrefix(Logger::ERROR, "CGI", "Error checking child process status");
+		close(output_pipe[0]);
+		return (setExitStatus(502));
+
+	}
+
 	return (true);
 }
 

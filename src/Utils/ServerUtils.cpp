@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerUtils.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
+/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 13:19:18 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/17 19:29:59 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/18 16:00:20 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -143,5 +143,10 @@ bool isPrefixMatch(const std::string &uri, LocConfig &loc) {
 	// Next character should be '/' or end of string
 	char next_char = uri[location_path.length()];
 	return next_char == '/' || location_path[location_path.length() - 1] == '/';
+}
+
+bool setExitStatus(uint16_t status) {
+	g_exit_status = status;
+	return (false);
 }
 

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
+/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/19 14:47:40 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/17 22:27:16 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/18 15:55:28 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,6 +47,8 @@
 #include <vector>      // for vector
 
 
+extern uint16_t g_exit_status;
+ 
 enum FileType { ISDIR, ISREG, NOT_FOUND_404, PERMISSION_DENIED_403, FILE_SYSTEM_ERROR_500 };
 enum MaxBody { DEFAULT, INFINITE, SPECIFIED };
 

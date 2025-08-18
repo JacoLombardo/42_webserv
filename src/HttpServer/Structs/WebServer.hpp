@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServer.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
+/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 13:44:09 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/17 22:28:28 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/18 16:11:06 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -216,9 +216,7 @@ class WebServer {
 	void reconstructChunkedRequest(Connection *conn);
 
 	/* Handlers/ServerCGI.cpp */
-	void sendCGIResponse(std::string &cgi_output, CGI *cgi, Connection *conn);
-	void normalResponse(CGI *cgi, Connection *conn);
-	void chunkedResponse(CGI *cgi, Connection *conn);
+	bool sendCGIResponse(CGI *cgi, Connection *conn);
 	void handleCGIOutput(int fd);
 	bool isCGIFd(int fd) const;
 

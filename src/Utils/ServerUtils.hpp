@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerUtils.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
+/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/17 19:03:21 by htharrau          #+#    #+#             */
-/*   Updated: 2025/08/17 19:27:36 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/18 15:59:45 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,5 +26,6 @@ std::string getExtension(const std::string &path);
 std::string detectContentType(const std::string &path);
 bool isPrefixMatch(const std::string &uri, LocConfig &loc);
 LocConfig *findBestMatch(const std::string &uri, std::vector<LocConfig> &locations);
+bool setExitStatus(uint16_t status);
 
 #endif
