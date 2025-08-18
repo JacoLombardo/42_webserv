@@ -103,7 +103,7 @@ if request_method == 'POST' and content_length > 0:
 					
 				except Exception as e:
 					error_message = 'Unable to save file'
-					exit_status = '500 Internal Server Error'
+					exit_status = '502 Bad Gateway'
 			else:
 				error_message = 'No file uploaded'
 				exit_status = '400 Bad Request'
@@ -113,7 +113,7 @@ if request_method == 'POST' and content_length > 0:
 			
 	except Exception as e:
 		error_message = f'Upload processing error: {str(e)}'
-		exit_status = '500 Internal Server Error'
+		exit_status = '502 Bad Gateway'
 		
 elif request_method != 'POST':
 	error_message = 'Invalid request method'

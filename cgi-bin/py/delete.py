@@ -53,7 +53,7 @@ if request_method == 'POST':
 							
 						except Exception as e:
 							error_message = 'Delete operation failed (server error)'
-							exit_status = '500 Internal Server Error'
+							exit_status = '502 Bad Gateway'
 					else:
 						error_message = 'File not found or not writable'
 						exit_status = '404 Not Found'
@@ -69,7 +69,7 @@ if request_method == 'POST':
 			
 	except Exception as e:
 		error_message = f'Delete processing error: {str(e)}'
-		exit_status = '500 Internal Server Error'
+		exit_status = '502 Bad Gateway'
 		
 else:
 	error_message = 'Invalid request method'

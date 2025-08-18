@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 			$exit_status = '201 Created';
 		} else {
 			$error_message = 'Unable to save file';
-			$exit_status = '500 Internal Server Error';
+			$exit_status = '502 Bad Gateway';
 		}
 	} elseif ($uploaded_file['error'] === UPLOAD_ERR_INI_SIZE || $uploaded_file['error'] === UPLOAD_ERR_FORM_SIZE) {
 		$error_message = 'File too large';
@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 		$exit_status = '400 Bad Request';
 	} else {
 		$error_message = 'Unknown upload error';
-		$exit_status = '500 Internal Server Error';
+		$exit_status = '502 Bad Gateway';
 	}
 } elseif ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 	$error_message = 'Invalid request method';

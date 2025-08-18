@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['_method']) && $_POST[
 			$deleted = unlink($file_path);
 			if (!$deleted) {
 				$error_message = 'Delete operation failed (server error)';
-				$exit_status = '500 Internal Server Error';
+				$exit_status = '502 Bad Gateway';
 			}
 		} else {
 			$error_message = 'File not found or not writable';
