@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 14:05:50 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/14 17:51:34 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/17 22:28:13 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,9 +35,6 @@ class Response {
 	inline void setStatus(uint16_t code) {
 		status_code = code;
 		reason_phrase = getReasonPhrase(code);
-		if (code >= 400) {
-			g_error_status = code;
-		}
 	}
 
 	inline void setHeader(const std::string &name, const std::string &value) {
@@ -62,24 +59,31 @@ class Response {
 	static Response internalServerError();
 	static Response badRequest();
 	static Response methodNotAllowed(const std::string& allowed);
+	static Response contentTooLarge(); 
 	static Response notImplemented();
 	static Response forbidden();
+	static Response badGateway();
+	static Response gatewayTimeout();
+	static Response HttpNotSupported();
 
 	// Factory methods overload when Connexion instance is available
 	static Response notFound(Connection *conn);
 	static Response internalServerError(Connection *conn);
 	static Response badRequest(Connection *conn);
 	static Response methodNotAllowed(Connection *conn, const std::string& allowed);
+	static Response contentTooLarge(Connection *conn); 
 	static Response notImplemented(Connection *conn);
 	static Response forbidden(Connection *conn);
+	static Response badGateway(Connection *conn);
+	static Response gatewayTimeout(Connection *conn);
+	static Response HttpNotSupported(Connection *conn);
 
   private:
+  	static Logger logg_;
 	std::string getReasonPhrase(uint16_t code) const;
 	void initFromStatusCode(uint16_t code);
 	void initFromCustomErrorPage(uint16_t code, Connection *conn);
 
-	static Logger 
-	    tmplogg_;
 };
 
 #endif /* end of include guard: RESPONSE_HPP */

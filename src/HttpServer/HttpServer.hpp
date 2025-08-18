@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpServer.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/15 11:02:08 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/15 11:02:56 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/17 20:47:16 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@
 #include "src/RequestParser/RequestParser.hpp"
 #include "src/Utils/ArgumentParser.hpp"
 #include "src/Utils/GeneralUtils.hpp"
-#include "src/Utils/LocationMatch.hpp"
+#include "src/Utils/ServerUtils.hpp"
 #include "src/Utils/StringUtils.hpp"
 
 #define KEEP_ALIVE_TO 5 // seconds
@@ -33,8 +33,6 @@
 
 #define __WEBSERV_VERSION__ "whateverX 0.whatever.7 -- made with <3 at 42 Berlin"
 
-enum MaxBody { DEFAULT, INFINITE, SPECIFIED };
 
-enum FileType { ISDIR, ISREG, NOT_FOUND_404, PERMISSION_DENIED_403, FILE_SYSTEM_ERROR_500 };
 
 #endif

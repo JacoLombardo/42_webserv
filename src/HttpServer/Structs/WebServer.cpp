@@ -17,7 +17,6 @@
 
 bool WebServer::_running;
 static bool interrupted = false;
-uint16_t g_error_status = 0;
 
 WebServer::WebServer(std::vector<ServerConfig> &confs)
     : _epoll_fd(-1),
@@ -85,7 +84,7 @@ void WebServer::run() {
 
 		if (event_count > 0) {
 			processEpollEvents(events, event_count);
-			_lggr.debug("Processed " + su::to_string(event_count) + " events");
+			// _lggr.debug("Processed " + su::to_string(event_count) + " events");
 			if (event_count == MAX_EVENTS) {
 				_lggr.warn("Hit MAX_EVENTS limit (" + su::to_string(MAX_EVENTS) +
 				           "), may have more events pending");

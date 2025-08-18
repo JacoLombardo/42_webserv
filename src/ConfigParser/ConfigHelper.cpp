@@ -3,14 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigHelper.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 13:54:29 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/14 10:45:32 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/17 22:25:33 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ConfigParser.hpp"
+#include <iomanip>
 
 // Remove comments and trim
 std::string ConfigParser::preProcess(const std::string &line) const {
@@ -152,6 +153,22 @@ void ConfigParser::printTree(const ConfigNode &node, const std::string &prefix, 
 	}
 }
 
+
+std::string humanReadableBytes(size_t bytes) {
+    const char* units[] = {"bytes", "KB", "MB", "GB", "TB", "PB"};
+    size_t unitIndex = 0;
+    double size = static_cast<double>(bytes);
+
+    while (size >= 1024 && unitIndex < 5) {
+        size /= 1024;
+        ++unitIndex;
+    }
+
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(1) << size << "" << units[unitIndex];
+    return out.str();
+}
+
 ////////////////
 // PRINT STRUCT
 void ConfigParser::printServers(const std::vector<ServerConfig> &servers, std::ostream &os) const {
@@ -174,6 +191,8 @@ void ConfigParser::printLocationConfig(const LocConfig &loc, std::ostream &os) c
 	if (!loc.index.empty()) {
 		os << "    Index: " << loc.index << "\n";
 	}
+
+	os << "    Max body size: " << humanReadableBytes(loc.client_max_body_size) << "\n";
 
 	// ADD THIS: Print upload_path if it's set
 	if (!loc.upload_path.empty()) {
@@ -207,8 +226,6 @@ void ConfigParser::printLocationConfig(const LocConfig &loc, std::ostream &os) c
 void ConfigParser::printServerConfig(const ServerConfig &server, std::ostream &os) const {
 	os << "Server on " << server.getHost() << ":" << server.port << "\n";
 
-	os << "  Client max body size: " << server.client_max_body_size << " bytes\n";
-
 	if (!server.error_pages.empty()) {
 		os << "  Error pages:\n";
 		for (std::map<uint16_t, std::string>::const_iterator it = server.error_pages.begin();
@@ -216,6 +233,7 @@ void ConfigParser::printServerConfig(const ServerConfig &server, std::ostream &o
 			os << "    " << it->first << " -> " << it->second << "\n";
 		}
 	}
+	os << "  Max of max body size all loc: " << humanReadableBytes(server.maximum_body_size) << "\n\n";
 
 	if (!server.locations.empty()) {
 		for (size_t i = 0; i < server.locations.size(); ++i) {

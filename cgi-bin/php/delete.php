@@ -29,8 +29,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['_method']) && $_POST[
 				$exit_status = '502 Bad Gateway';
 			}
 		} else {
-			$error_message = 'File not found or not writable';
-			$exit_status = '404 Not Found';
+			if (!file_exists($file_path)) {
+				$error_message = 'File not found';
+				$exit_status = '404 Not Found';
+			} else if (!is_writable($file_path)) {
+				$error_message = 'File not writable';
+				$exit_status = '403 Forbidden';
+			}
 		}
 	} else {
 		$error_message = 'Invalid filename';

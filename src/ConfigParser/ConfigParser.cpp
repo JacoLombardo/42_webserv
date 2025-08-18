@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 13:54:15 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/14 14:26:32 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/16 18:58:40 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,7 @@ bool ConfigParser::parseTree(const std::string &filePath, ConfigNode &childNode)
 		return false;
 	}
 
-	logg_.logWithPrefix(Logger::INFO, "CONFIG", "Configuration tree successfully created.");
+	logg_.logWithPrefix(Logger::DEBUG, "CONFIG", "Configuration tree successfully created.");
 	logg_.logWithPrefix(Logger::DEBUG, "CONFIG", "Dumping server tree:");
 	std::ostringstream oss;
 	ConfigParser::printTree(childNode, "", true, oss);

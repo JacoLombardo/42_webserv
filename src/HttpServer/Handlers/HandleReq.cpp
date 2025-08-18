@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   DirectoryReq.cpp                                   :+:      :+:    :+:   */
+/*   HandleReq.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 12:56:57 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/14 14:24:37 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/17 22:29:27 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,113 +14,85 @@
 #include "src/HttpServer/Structs/Connection.hpp"
 #include "src/HttpServer/Structs/Response.hpp"
 #include "src/HttpServer/HttpServer.hpp"
+#include "src/Utils/ServerUtils.hpp"
 
-// Serving the index file or listing if possible
-Response WebServer::handleDirectoryRequest(Connection *conn, const std::string &fullDirPath) {
-	_lggr.debug("Handling directory request: " + fullDirPath);
 
-	// Try to serve index file
-	if (!conn->locConfig->index.empty()) {
-		std::string fullIndexPath = fullDirPath + conn->locConfig->index;
-		_lggr.debug("Trying index file: " + fullIndexPath);
-		if (checkFileType(fullIndexPath.c_str()) == ISREG) {
-			_lggr.debug("Found index file, serving: " + fullIndexPath);
-			return handleFileRequest(conn, fullIndexPath);
+bool WebServer::handleFileSystemErrors(FileType file_type, const std::string& full_path, Connection *conn) {
+	if (file_type == NOT_FOUND_404) {
+		_lggr.debug("[Resp] Could not open : " + full_path);
+		prepareResponse(conn, Response::notFound(conn));
+		return false;
+	}
+	if (file_type == PERMISSION_DENIED_403) {
+		_lggr.debug("[Resp] Permission denied : " + full_path);
+		prepareResponse(conn, Response::forbidden(conn));
+		return false;
+	}
+	if (file_type == FILE_SYSTEM_ERROR_500) {
+		_lggr.debug("[Resp] Other file access problem : " + full_path);
+		prepareResponse(conn, Response::internalServerError(conn));
+		return false;
+	}
+	return true;
+}
+
+
+void WebServer::handleDirectoryRequest(ClientRequest &req, Connection *conn, bool end_slash) {
+
+	const std::string full_path =  conn->locConfig->getFullPath();
+		
+	_lggr.debug("Directory request: " + full_path);
+
+	if (!end_slash) {
+		_lggr.debug("Directory request without trailing slash, redirecting: " + req.uri);
+		std::string redirectPath = req.uri + "/";
+		prepareResponse(conn, respReturnDirective(conn, 301, redirectPath));
+		return;
+	} else {
+		prepareResponse(conn, respDirectoryRequest(conn, full_path));
+		return;
+	}
+}
+
+void  WebServer::handleFileRequest(ClientRequest &req, Connection *conn, bool end_slash) {
+
+	const std::string full_path =  conn->locConfig->getFullPath();
+	_lggr.debug("File request: " + full_path);
+	
+	// Trailing '/'? Redirect
+	if (end_slash ) { //&& !conn->locConfig->is_exact_()
+		_lggr.debug("File request with trailing slash, redirecting: " + req.uri);
+		std::string redirectPath = req.uri.substr(0, req.uri.length() - 1);
+		prepareResponse(conn, respReturnDirective(conn, 301, redirectPath));
+		return;
+	}
+
+	// HANDLE CGI
+	std::string extension = getExtension(full_path);
+	if (conn->locConfig->acceptExtension(extension)) {
+		std::string interpreter = conn->locConfig->getExtensionPath(extension);
+		_lggr.debug("CGI request, interpreter location : " + interpreter);
+		req.extension = extension;
+		if (!handleCGIRequest(req, conn)) {
+			_lggr.error("Handling the CGI request failed.");
+			prepareResponse(conn, Response::badGateway(conn));
 		}
+		return;
 	}
 
-	// Handle autoindex
-	if (conn->locConfig->autoindex) {
-		_lggr.debug("Autoindex on, generating directory listing");
-		return generateDirectoryListing(conn, fullDirPath);
+	// HANDLE STATIC GET RESPONSE
+	if (req.method == "GET") {
+		_lggr.debug("Static file GET request");
+		prepareResponse(conn, respFileRequest(conn, full_path));
+		return;
+	} else {
+		_lggr.debug("Non-GET request for static file - not implemented");
+		prepareResponse(conn, Response::methodNotAllowed(conn, conn->locConfig->getAllowedMethodsString())); 
+		return;
 	}
-
-	// No index file and no autoindex
-	_lggr.debug("No index file, autoindex disabled");
-	return Response::notFound(conn);
 }
 
-// serving the file if found
-Response WebServer::handleFileRequest(Connection *conn, const std::string &fullFilePath) {
-	_lggr.debug("Handling file request: " + fullFilePath);
-	// Read file content
-	std::string content = getFileContent(fullFilePath);
-	if (content.empty()) {
-		_lggr.error("Failed to read file: " + fullFilePath);
-		return Response::internalServerError(conn);
-	}
-	// Create response
-	Response resp(200, content);
-	resp.setContentType(detectContentType(fullFilePath));
-	resp.setContentLength(content.length());
-	_lggr.debug("Successfully serving file: " + fullFilePath + " (" +
-	            su::to_string(content.length()) + " bytes)");
-	return resp;
-}
 
-Response WebServer::handleReturnDirective(Connection *conn, uint16_t code, std::string target) {
-
-	_lggr.debug("Handling return directive '" + su::to_string(code) + "' to " + target);
-	if (code == 0 || target.empty()) {
-		_lggr.error("Problem with the return directive - not properly configured");
-		return Response::internalServerError(conn);
-	}
-
-	Response resp(code);
-	resp.setHeader("Location", target);
-	std::ostringstream html;
-	html << "<!DOCTYPE html>\n"
-	     << "<html>\n"
-	     << "<head>\n"
-	     << "<title>Redirecting...</title>\n"
-	     << "</head>\n"
-	     << "<body>\n"
-	     << "<h1>Redirecting</h1>\n"
-	     << "<p>The document has moved <a href=\"#\">here</a>.</p>\n"
-	     << "</body>\n"
-	     << "</html>\n";
-	resp.body = html.str();
-	resp.setContentType("text/html");
-	resp.setContentLength(resp.body.length());
-	_lggr.debug("Generated redirect response");
-
-	return resp;
-}
-
-std::string WebServer::detectContentType(const std::string &path) {
-
-	std::map<std::string, std::string> cTypes;
-	cTypes[".css"] = "text/css";
-	cTypes[".js"] = "application/javascript";
-	cTypes[".html"] = "text/html";
-	cTypes[".htm"] = "text/html";
-	cTypes[".json"] = "application/json";
-	cTypes[".png"] = "image/png";
-	cTypes[".jpg"] = "image/jpeg";
-	cTypes[".jpeg"] = "image/jpeg";
-	cTypes[".gif"] = "image/gif";
-	cTypes[".svg"] = "image/svg+xml";
-	cTypes[".ico"] = "image/x-icon";
-	cTypes[".txt"] = "text/plain";
-	cTypes[".pdf"] = "application/pdf";
-	cTypes[".zip"] = "application/zip";
-
-	std::string ext = getExtension(path);
-	std::map<std::string, std::string>::const_iterator it = cTypes.find(ext);
-	if (it != cTypes.end())
-		return it->second;
-	return "application/octet-stream"; // default binary stream
-}
-
-std::string WebServer::getExtension(const std::string &path) {
-	std::size_t dot_pos = path.find_last_of('.');
-	std::size_t qm_pos = path.find_first_of('?');
-	if (qm_pos != std::string::npos && dot_pos < qm_pos)
-		return path.substr(dot_pos, qm_pos - dot_pos);
-	else if (qm_pos == std::string::npos && dot_pos != std::string::npos)
-		return path.substr(dot_pos);
-	return "";
-}
 
 // struct dirent {
 //     ino_t          d_ino;       // Inode number

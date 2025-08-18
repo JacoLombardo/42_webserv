@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ResponseHandler.cpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 14:08:41 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/14 10:50:56 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/16 19:50:05 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ ssize_t WebServer::prepareResponse(Connection *conn, const Response &resp) {
 	}
 	_lggr.debug("Saving a response [" + su::to_string(resp.status_code) + "] for fd " +
 	            su::to_string(conn->fd));
+	_lggr.debug("Response :" + resp.toShortString());
 	conn->response = resp;
 	conn->response_ready = true;
 	return conn->response.toString().size();
@@ -35,6 +36,7 @@ ssize_t WebServer::prepareResponse(Connection *conn, const Response &resp) {
 }
 
 bool WebServer::sendResponse(Connection *conn) {
+	_lggr.debug("Current state of response [" + conn->response.toShortString());
 	if (!conn->response_ready) {
 		_lggr.error("Response is not ready to be sent back to the client");
 		_lggr.debug("Error for clinet " + conn->toString());
@@ -42,6 +44,7 @@ bool WebServer::sendResponse(Connection *conn) {
 	}
 	_lggr.debug("Sending response [" + conn->response.toShortString() +
 	            "] back to fd: " + su::to_string(conn->fd));
+	std::cout << conn->response.toShortString() << "] back to fd: " << su::to_string(conn->fd) << std::endl;
 	std::string raw_response = conn->response.toString();
 	epollManage(EPOLL_CTL_MOD, conn->fd, EPOLLIN);
 	conn->response.reset();

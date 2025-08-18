@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/19 14:47:40 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/14 17:52:31 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/17 22:27:16 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@
 #include <fstream> // for ifstream
 #include <functional>
 #include <iostream>
+#include <iomanip>
 #include <map> // for map
 #include <netdb.h>
 #include <netinet/in.h>
@@ -45,8 +46,9 @@
 #include <utility>     // for makepair
 #include <vector>      // for vector
 
-// Global error status variable
-extern uint16_t g_error_status;
+
+enum FileType { ISDIR, ISREG, NOT_FOUND_404, PERMISSION_DENIED_403, FILE_SYSTEM_ERROR_500 };
+enum MaxBody { DEFAULT, INFINITE, SPECIFIED };
 
 #define CHUNK_SIZE 500
 

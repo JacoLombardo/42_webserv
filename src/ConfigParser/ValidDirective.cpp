@@ -3,20 +3,20 @@
 /*                                                        :::      ::::::::   */
 /*   ValidDirective.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 13:52:39 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/14 10:48:20 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/17 22:25:41 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ConfigParser.hpp"
 
 // Constructor - initialize valid directives
-ConfigParser::ConfigParser() {
-	logg_.setLogLevel(Logger::DEBUG);
+ConfigParser::ConfigParser()  : logg_("Config.log", Logger::DEBUG, true) {
 	initValidDirectives();
 }
+
 
 void ConfigParser::initValidDirectives() {
 	validDirectives_.clear();
@@ -33,7 +33,7 @@ void ConfigParser::initValidDirectives() {
 	validDirectives_.push_back(Validity("error_page", std::vector<std::string>(1, "server"), true,
 	                                    2, SIZE_MAX, &ConfigParser::validateError));
 	validDirectives_.push_back(Validity("client_max_body_size",
-	                                    std::vector<std::string>(1, "server"), false, 1, 1,
+	                                    makeVector("server", "location"), false, 1, 1,
 	                                    &ConfigParser::validateMaxBody));
 	validDirectives_.push_back(Validity("location", std::vector<std::string>(1, "server"), true, 1,
 	                                    1, &ConfigParser::validateLocation));
