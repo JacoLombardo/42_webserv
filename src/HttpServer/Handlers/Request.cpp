@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
+/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 14:10:22 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/17 22:28:03 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/20 12:14:36 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,18 +35,21 @@ bool WebServer::handleCompleteRequest(Connection *conn) {
 	return true; // Continue processing
 }
 
-bool WebServer::handleCGIRequest(ClientRequest &req, Connection *conn) {
+uint16_t WebServer::handleCGIRequest(ClientRequest &req, Connection *conn) {
 	Logger _lggr;
 
-	CGI *cgi = CGIUtils::createCGI(req, conn->locConfig);
-	if (!cgi)
-		return (false);
+	CGI *cgi = NULL;
+	uint16_t exit_code = CGIUtils::createCGI(cgi, req, conn->locConfig);
+	if (exit_code)
+		return (exit_code);
+
 	_cgi_pool[cgi->getOutputFd()] = std::make_pair(cgi, conn);
 	if (!epollManage(EPOLL_CTL_ADD, cgi->getOutputFd(), EPOLLIN)) {
 		_lggr.error("EPollManage for CGI request failed.");
-		return (false);
+		return (502);
 	}
-	return (true);
+	
+	return (0);
 }
 
 /* Request processing */

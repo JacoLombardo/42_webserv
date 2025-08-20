@@ -6,7 +6,7 @@
 /*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/31 08:58:57 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/18 16:12:29 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/20 12:18:21 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,12 +49,12 @@ class CGI {
 	int getOutputFd() const;
 
 	// CGI handler
-	bool cleanup();
+	uint16_t cleanup();
 };
 
 namespace CGIUtils {
-bool runCGIScript(ClientRequest &req, CGI &cgi);
-CGI *createCGI(ClientRequest &req, LocConfig *locConfig);
+uint16_t runCGIScript(ClientRequest &req, CGI &cgi);
+uint16_t createCGI(CGI *&cgi, ClientRequest &req, LocConfig *locConfig);
 } // namespace CGIUtils
 
 #endif

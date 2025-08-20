@@ -6,7 +6,7 @@
 /*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/19 14:47:40 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/18 15:55:28 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/20 12:18:49 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,8 +46,6 @@
 #include <utility>     // for makepair
 #include <vector>      // for vector
 
-
-extern uint16_t g_exit_status;
  
 enum FileType { ISDIR, ISREG, NOT_FOUND_404, PERMISSION_DENIED_403, FILE_SYSTEM_ERROR_500 };
 enum MaxBody { DEFAULT, INFINITE, SPECIFIED };

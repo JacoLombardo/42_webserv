@@ -6,7 +6,7 @@
 /*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/31 09:07:54 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/18 16:12:41 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/20 12:18:33 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -96,23 +96,23 @@ int CGI::getOutputFd() const { return (output_fd_); }
 
 /* CGI HANDLER */
 
-bool CGI::cleanup() {
+uint16_t CGI::cleanup() {
 	Logger logger;
 	// 8. Wait for child process and check exit status
 	int status;
 	if (waitpid(getPid(), &status, 0) == -1) {
 		logger.logWithPrefix(Logger::ERROR, "CGI", "Failed to wait for CGI process");
 		close(getOutputFd());
-		return (setExitStatus(502));
+		return (502);
 	}
 
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
 		logger.logWithPrefix(Logger::ERROR, "CGI", "CGI script failed or was terminated");
 		close(getOutputFd());
-		return (setExitStatus(502));
+		return (502);
 	}
 	// 9. Clean up
 	close(getOutputFd());
-	return (true);
+	return (0);
 }
 

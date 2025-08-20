@@ -6,7 +6,7 @@
 /*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 11:38:44 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/18 16:13:44 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/20 12:19:13 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,7 +48,7 @@ bool WebServer::sendCGIResponse(CGI *cgi, Connection *conn) {
 		logger.logWithPrefix(Logger::ERROR, "CGI", "Error reading from CGI script");
 		close(cgi->getOutputFd());
 		waitpid(cgi->getPid(), NULL, 0);
-		return (setExitStatus(502));
+		return (false);
 	}
 	printCGIResponse(cgi_output);
 	conn->response_ready = true;

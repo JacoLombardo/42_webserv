@@ -6,7 +6,7 @@
 /*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 13:19:18 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/18 16:00:20 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/20 12:17:20 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -144,9 +144,3 @@ bool isPrefixMatch(const std::string &uri, LocConfig &loc) {
 	char next_char = uri[location_path.length()];
 	return next_char == '/' || location_path[location_path.length() - 1] == '/';
 }
-
-bool setExitStatus(uint16_t status) {
-	g_exit_status = status;
-	return (false);
-}
-

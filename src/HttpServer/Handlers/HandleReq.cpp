@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HandleReq.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
+/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 12:56:57 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/17 22:29:27 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/20 12:15:27 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,9 +73,10 @@ void  WebServer::handleFileRequest(ClientRequest &req, Connection *conn, bool en
 		std::string interpreter = conn->locConfig->getExtensionPath(extension);
 		_lggr.debug("CGI request, interpreter location : " + interpreter);
 		req.extension = extension;
-		if (!handleCGIRequest(req, conn)) {
+		uint16_t exit_code = handleCGIRequest(req, conn);
+		if (exit_code) {
 			_lggr.error("Handling the CGI request failed.");
-			prepareResponse(conn, Response::badGateway(conn));
+			prepareResponse(conn, Response(exit_code, conn));
 		}
 		return;
 	}

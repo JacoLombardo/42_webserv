@@ -6,7 +6,7 @@
 /*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 13:44:09 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/18 16:11:06 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/20 11:56:44 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -147,7 +147,8 @@ class WebServer {
 
 	bool reconstructRequest(Connection *conn);
 
-	bool handleCGIRequest(ClientRequest &req, Connection *conn);
+	uint16_t handleCGIRequest(ClientRequest &req, Connection *conn);
+	//bool handleCGIRequest(ClientRequest &req, Connection *conn);
 
 	/// Handles cases where request size exceeds limits.
 	/// \param conn The connection that sent the oversized request.
