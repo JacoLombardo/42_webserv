@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServer.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
+/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 13:44:09 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/19 17:28:05 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/20 15:23:38 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -150,7 +150,8 @@ class WebServer {
 
 	bool reconstructRequest(Connection *conn);
 
-	bool handleCGIRequest(ClientRequest &req, Connection *conn);
+	uint16_t handleCGIRequest(ClientRequest &req, Connection *conn);
+	//bool handleCGIRequest(ClientRequest &req, Connection *conn);
 
 	/// Handles cases where request size exceeds limits.
 	/// \param conn The connection that sent the oversized request.
@@ -219,9 +220,7 @@ class WebServer {
 	void reconstructChunkedRequest(Connection *conn);
 
 	/* Handlers/ServerCGI.cpp */
-	void sendCGIResponse(std::string &cgi_output, CGI *cgi, Connection *conn);
-	void normalResponse(CGI *cgi, Connection *conn);
-	void chunkedResponse(CGI *cgi, Connection *conn);
+	bool sendCGIResponse(CGI *cgi, Connection *conn);
 	void handleCGIOutput(int fd);
 	bool isCGIFd(int fd) const;
 

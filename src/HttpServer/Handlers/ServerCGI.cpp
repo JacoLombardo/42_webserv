@@ -6,7 +6,7 @@
 /*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 11:38:44 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/13 15:44:11 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/20 12:19:13 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 #include "src/HttpServer/Structs/Response.hpp"
 #include "src/HttpServer/HttpServer.hpp"
 
-void print_cgi_response(const std::string &cgi_output) {
+void printCGIResponse(const std::string &cgi_output) {
 	std::istringstream response_stream(cgi_output);
 	std::string line;
 	bool in_body = false;
@@ -34,36 +34,7 @@ void print_cgi_response(const std::string &cgi_output) {
 	}
 }
 
-void WebServer::sendCGIResponse(std::string &cgi_output, CGI *cgi, Connection *conn) {
-	Response resp;
-	resp.setStatus(200);
-	resp.version = "HTTP/1.1";
-	resp.setContentType(cgi->extractContentType(cgi_output));
-
-	size_t header_end = cgi_output.find("\n\n");
-	if (header_end != std::string::npos) {
-		// Found header separator, extract body after it
-		resp.body = cgi_output.substr(header_end + 2); // +2 to skip "\n\n"
-		resp.setContentLength(resp.body.length());
-	} else {
-		// No header separator found, treat entire output as body
-		resp.body = cgi_output;
-		resp.setContentLength(cgi_output.length());
-	}
-
-	std::string raw_response = resp.toString();
-	conn->response_ready = true;
-	send(conn->fd, raw_response.c_str(), raw_response.length(), 0);
-	cgi->cleanup();
-	delete cgi;
-}
-
-void WebServer::chunkedResponse(CGI *cgi, Connection *conn) {
-	(void)cgi;
-	(void)conn;
-}
-
-void WebServer::normalResponse(CGI *cgi, Connection *conn) {
+bool WebServer::sendCGIResponse(CGI *cgi, Connection *conn) {
 	Logger logger;
 	std::string cgi_output;
 	char buffer[4096];
@@ -77,18 +48,17 @@ void WebServer::normalResponse(CGI *cgi, Connection *conn) {
 		logger.logWithPrefix(Logger::ERROR, "CGI", "Error reading from CGI script");
 		close(cgi->getOutputFd());
 		waitpid(cgi->getPid(), NULL, 0);
-		return;
+		return (false);
 	}
-	print_cgi_response(cgi_output);
-	//sendCGIResponse(cgi_output, cgi, conn);
+	printCGIResponse(cgi_output);
 	conn->response_ready = true;
 	send(conn->fd, cgi_output.c_str(), cgi_output.length(), 0);
 	cgi->cleanup();
 	delete cgi;
+	return (true);
 }
 
 void WebServer::handleCGIOutput(int fd) {
-	bool chunked = false;
 	CGI *cgi;
 	Connection *conn;
 	for (std::map<int, std::pair<CGI *, Connection *> >::iterator it = _cgi_pool.begin();
@@ -98,10 +68,7 @@ void WebServer::handleCGIOutput(int fd) {
 			conn = it->second.second;
 		}
 	}
-	if (chunked)
-		chunkedResponse(cgi, conn);
-	else
-		normalResponse(cgi, conn);
+	sendCGIResponse(cgi, conn);
 }
 
 bool WebServer::isCGIFd(int fd) const { return (_cgi_pool.find(fd) != _cgi_pool.end()); }

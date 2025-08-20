@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   StaticGetResp.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
+/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/19 18:29:33 by htharrau          #+#    #+#             */
-/*   Updated: 2025/08/19 20:13:40 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/20 15:23:21 by jalombar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,9 +71,10 @@ void  WebServer::handleFileRequest(ClientRequest &req, Connection *conn, bool en
 		std::string interpreter = conn->locConfig->getInterpreter(extension);
 		_lggr.debug("CGI request, interpreter location : " + interpreter);
 		req.extension = extension;
-		if (!handleCGIRequest(req, conn)) {
+		uint16_t exit_code = handleCGIRequest(req, conn);
+		if (exit_code) {
 			_lggr.error("Handling the CGI request failed.");
-			prepareResponse(conn, Response::badGateway(conn));
+			prepareResponse(conn, Response(exit_code, conn));
 		}
 		return;
 	}
