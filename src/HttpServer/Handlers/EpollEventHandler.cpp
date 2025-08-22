@@ -50,6 +50,9 @@ void WebServer::handleClientEvent(int fd, uint32_t event_mask) {
 		Connection *conn = conn_it->second;
 		if (event_mask & EPOLLIN) {
 			handleClientRecv(conn);
+			if (_connections.find(fd) == _connections.end()) {
+				return; // Connection was closed, don't continue
+			}
 		}
 		if (event_mask & EPOLLOUT) {
 			if (conn->response_ready)
