@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/17 15:43:17 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/19 20:58:12 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/24 00:48:44 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -215,7 +215,6 @@ uint16_t RequestParsingUtils::parseRequestHeaders(const std::string &raw_request
 		logger.logWithPrefix(Logger::WARNING, "HTTP", "No request received");
 		return 400;
 	}
-
 	request.chunked_encoding = false;
 	request.file_upload = false;
 	request.extension = "";
@@ -234,3 +233,4 @@ uint16_t RequestParsingUtils::parseRequestHeaders(const std::string &raw_request
 	logger.logWithPrefix(Logger::INFO, "HTTP", "Header Request parsing completed");
 	return 0;
 }
+

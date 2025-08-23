@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 14:09:35 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/19 18:37:16 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/23 18:08:41 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@ void WebServer::handleNewConnection(ServerConfig *sc) {
 
 	int client_fd = accept(sc->getServerFD(), (struct sockaddr *)&client_addr, &client_len);
 	if (client_fd == -1) {
-		// TODO: cannot accept a connection with the client
+		return;
 	}
 
 	if (!setNonBlocking(client_fd)) {
@@ -29,7 +29,6 @@ void WebServer::handleNewConnection(ServerConfig *sc) {
 		return;
 	}
 
-	// TODO: error checks
 	Connection *conn = addConnection(client_fd, sc);
 
 	if (!epollManage(EPOLL_CTL_ADD, client_fd, EPOLLIN)) {

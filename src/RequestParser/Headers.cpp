@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/25 10:46:05 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/19 15:57:46 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/23 22:52:46 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,9 +33,16 @@ uint16_t RequestParsingUtils::checkHeader(std::string &name, std::string &value,
 		return 400;
 	}
 	// Chunk encoding + content length validation
-	if (l_name == "transfer-encoding" && l_value == "chunked")
-		request.chunked_encoding = true;
-	else if (l_name == "content-length") {
+	if (l_name == "transfer-encoding") {
+		if (l_value == "chunked") {
+			request.chunked_encoding = true;
+		} else {
+			logger.logWithPrefix(Logger::WARNING, "HTTP", "Invalid transfer encoding");
+			return 400;
+		}
+	}
+	// content length
+	if (l_name == "content-length") {
 		std::istringstream iss(value);
 		ssize_t parsed_length = -1;
 		iss >> parsed_length;
@@ -50,6 +57,7 @@ uint16_t RequestParsingUtils::checkHeader(std::string &name, std::string &value,
 	if (l_name == "expect") {
 		if (l_value == "100-continue") {
 			request.expect_continue = true;
+			logger.debug("Expect header: " + l_value);
 		} else {
 			logger.logWithPrefix(Logger::WARNING, "HTTP", "Unsupported Expect header: " + value);
 			return 417; // expectation failed
@@ -119,6 +127,10 @@ uint16_t RequestParsingUtils::parseHeaders(std::istringstream &stream, ClientReq
 		if (header_error != 0)
 			return header_error;
 		request.headers[su::to_lower(name)] = value;
+	}
+	if (request.content_length == -1 && request.chunked_encoding == false) {
+		logger.logWithPrefix(Logger::WARNING, "HTTP", "No content length, no chunk");
+		return 411;
 	}
 	logger.logWithPrefix(Logger::WARNING, "HTTP", "Missing final CRLF");
 	return 400;

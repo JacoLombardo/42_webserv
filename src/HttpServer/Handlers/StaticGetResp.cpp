@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   StaticGetResp.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/19 18:29:33 by htharrau          #+#    #+#             */
-/*   Updated: 2025/08/20 15:23:21 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/24 00:41:13 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,8 +42,8 @@ void WebServer::handleDirectoryRequest(ClientRequest &req, Connection *conn, boo
 	_lggr.debug("Directory request: " + full_path);
 
 	if (!end_slash) {
-		_lggr.debug("Directory request without trailing slash, redirecting to : " + req.uri + "/");
-		std::string redirectPath = req.uri + "/";
+		_lggr.debug("Directory request without trailing slash, redirecting to : " + req.path + "/");
+		std::string redirectPath = req.path + "/";
 		prepareResponse(conn, respReturnDirective(conn, 301, redirectPath));
 		return;
 	} else {
@@ -58,13 +58,13 @@ void  WebServer::handleFileRequest(ClientRequest &req, Connection *conn, bool en
 	_lggr.debug("File request: " + full_path);
 	
 	// Trailing '/'? Redirect
-	if (end_slash ) { //&& !conn->locConfig->is_exact_()
-		_lggr.debug("File request with trailing slash, redirecting: " + req.uri);
-		std::string redirectPath = req.uri.substr(0, req.uri.length() - 1);
+	if (end_slash) { //&& !conn->locConfig->is_exact_()
+		_lggr.debug("File request with trailing slash, redirecting: " + req.path);
+		std::string redirectPath = req.path.substr(0, req.path.length() - 1);
 		prepareResponse(conn, respReturnDirective(conn, 301, redirectPath));
 		return;
 	}
-
+	
 	// HANDLE CGI
 	std::string extension = getExtension(full_path);
 	if (conn->locConfig->acceptExtension(extension)) {
@@ -90,6 +90,7 @@ void  WebServer::handleFileRequest(ClientRequest &req, Connection *conn, bool en
 		return;
 	}
 }
+
 
 // struct dirent {
 //     ino_t          d_ino;       // Inode number

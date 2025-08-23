@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServer.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 13:44:09 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/20 15:23:38 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/23 18:30:21 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -150,6 +150,7 @@ class WebServer {
 
 	bool reconstructRequest(Connection *conn);
 
+
 	uint16_t handleCGIRequest(ClientRequest &req, Connection *conn);
 	// bool handleCGIRequest(ClientRequest &req, Connection *conn);
 
@@ -220,6 +221,7 @@ class WebServer {
 
 	/* Handlers/ServerCGI.cpp */
 	bool sendCGIResponse(CGI *cgi, Connection *conn);
+	ssize_t prepareCGIResponse(CGI *cgi, Connection *conn);
 	void handleCGIOutput(int fd);
 	bool isCGIFd(int fd) const;
 
