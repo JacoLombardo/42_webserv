@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ReqValidation.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 12:56:57 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/21 11:09:30 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/25 14:59:07 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,13 +34,18 @@ bool WebServer::matchLocation(ClientRequest &req, Connection *conn) {
 bool WebServer::normalizePath(ClientRequest &req, Connection *conn) {
 
 	// normalisation
+	_lggr.debug("full_path: " + req.path);
 	std::string full_path = buildFullPath(req.path, conn->locConfig);
 	std::string root_full_path = buildFullPath("", conn->locConfig);
 	char resolved[PATH_MAX];
 	realpath(full_path.c_str(), resolved);
 	std::string normal_full_path(resolved);
-	if (su::back(full_path) == '/')
+	if (su::back(normal_full_path) != '/')
 		normal_full_path += "/";
+
+	_lggr.debug("full_path: " + full_path);
+	_lggr.debug("normal_full_path: " + normal_full_path);
+	_lggr.debug("root_full_path: " + root_full_path);
 
 	// std::string temp_full_path = normal_full_path + "/";
 	if (normal_full_path.compare(0, root_full_path.size(), root_full_path) != 0) {
@@ -51,6 +56,8 @@ bool WebServer::normalizePath(ClientRequest &req, Connection *conn) {
 	_lggr.debug("[Resp] Normalized full path is safe : " + normal_full_path);
 	
 	// this should maybe be in the connection info, not in the locConfig
+	if (su::back(req.path) != '/' && su::back(normal_full_path) == '/')
+		normal_full_path = normal_full_path.substr(0, normal_full_path.length() - 1);
 	conn->locConfig->setFullPath(normal_full_path);
 	return true;
 }
@@ -66,20 +73,6 @@ bool WebServer::processValidRequestChecks(ClientRequest &req, Connection *conn) 
 		prepareResponse(conn, respReturnDirective(conn, code, target));
 		return false;
 	}
- 
-//	_lggr.debug(
-//	    "[Resp] The matched location does not have return directive or the match is not exact.");
-
-	// method allowed?
-//	if (!conn->locConfig->hasMethod(req.method)) {
-//		_lggr.warn("[Resp] Method " + req.method + " is not allowed for location " +
-//		           conn->locConfig->path);
-//		prepareResponse(
-//		    conn, Response::methodNotAllowed(conn, conn->locConfig->getAllowedMethodsString()));
-//		return false;
-//	}
-//	_lggr.debug("[Resp] Method " + req.method + " is allowed " +
-//	            conn->locConfig->getAllowedMethodsString());
 
 	_lggr.debug("[Resp] No return directive (or no exact match)");
 	
@@ -93,16 +86,10 @@ bool WebServer::processValidRequestChecks(ClientRequest &req, Connection *conn) 
 	_lggr.debug("[Resp] Method " + req.method + " is allowed (allowed: " 
 		         + conn->locConfig->getAllowedMethodsString() + ")");
 
-	// expect 100 -> only with POST
-	if (req.expect_continue && req.method != "POST") {
-		_lggr.error("[Resp] Method " + req.method + " is not allowed with expect : Continue");
-		prepareResponse(conn, Response(400, conn));
-		return false;
-	}
-
 	if (req.content_length == -1 && req.chunked_encoding == false && req.method != "GET") {
 		_lggr.error("No content length, not chunked");
 		prepareResponse(conn, Response(411, conn));
+		return false;
 	}
 	
 	// Check against location's max body size

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ResponseHandler.cpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jalombar <jalombar@student.42.fr>          +#+  +:+       +#+        */
+/*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 14:08:41 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/20 16:21:00 by jalombar         ###   ########.fr       */
+/*   Updated: 2025/08/25 14:59:39 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,11 +35,6 @@ bool WebServer::sendResponse(Connection *conn) {
 	std::string raw_response;
 
 	_lggr.debug("Current state of response [" + conn->response.toShortString());
-	/* if (!conn->response_ready) {
-		_lggr.error("Response is not ready to be sent back to the client");
-		_lggr.debug("Error for clinet " + conn->toString());
-		return false;
-	} */
 	_lggr.debug("Sending response [" + conn->response.toShortString() +
 	            "] back to fd: " + su::to_string(conn->fd));
 	std::cout << conn->response.toShortString() << "] back to fd: " << su::to_string(conn->fd) << std::endl;
@@ -54,14 +49,6 @@ bool WebServer::sendResponse(Connection *conn) {
 	bool send_success = send(conn->fd, raw_response.c_str(), raw_response.size(), MSG_NOSIGNAL) != -1;
 	if (!send_success) {
 		return false;
-	}
-
-	if (conn->state == Connection::CONTINUE_SENT) {
-		_lggr.debug("Sent 100 Continue, waiting for request body");
-		epollManage(EPOLL_CTL_MOD, conn->fd, EPOLLIN);
-		conn->response_ready = false;
-		conn->state = Connection::READING_BODY;  // Now read the body
-		return true;
 	}
 
 	epollManage(EPOLL_CTL_MOD, conn->fd, EPOLLIN);

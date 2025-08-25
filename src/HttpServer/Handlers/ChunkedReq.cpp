@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: Invalid date        by                   #+#    #+#             */
-/*   Updated: 2025/08/23 19:49:22 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/25 14:57:28 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,8 +69,6 @@ bool WebServer::processChunkSize(Connection *conn) {
 			return false;
 		}
 	}
-
-
 	
 	if (conn->chunk_size == 0) {
 		conn->state = Connection::READING_TRAILER;
@@ -122,7 +120,6 @@ bool WebServer::processChunkData(Connection *conn) {
 	_lggr.debug("Chunk data processed successfully: " + su::to_string(conn->chunk_size) + " bytes");
 
 	conn->chunk_bytes_read = 0;
-	conn->state = Connection::READING_CHUNK_SIZE;
 	return processChunkSize(conn);
 }
 
@@ -148,7 +145,6 @@ bool WebServer::processTrailer(Connection *conn) {
 	return processTrailer(conn);
 }
 
-// TODO: add more debuggin info
 void WebServer::reconstructChunkedRequest(Connection *conn) {
 	std::string reconstructed_request = conn->headers_buffer;
 
@@ -191,7 +187,6 @@ void WebServer::reconstructChunkedRequest(Connection *conn) {
 	// Store the reconstructed request but don't overwrite read_buffer yet
 	// The body will be handled separately in processRequest()
 	conn->read_buffer = reconstructed_request + conn->chunk_data;
-	conn->state = Connection::REQUEST_COMPLETE;
 
 	_lggr.debug("Chunked request reconstruction completed successfully");
 	_lggr.debug("Reconstructed request, total body size: " +
@@ -200,5 +195,5 @@ void WebServer::reconstructChunkedRequest(Connection *conn) {
 	// Debug: show first part of reconstructed request
 	std::string debug_preview = conn->read_buffer.substr(0, std::min(size_t(200), conn->read_buffer.size()));
 	_lggr.debug("Reconstructed request preview: " + debug_preview);
-
 }
+
