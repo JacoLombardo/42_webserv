@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 14:10:22 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/26 10:12:10 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/26 10:28:36 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,12 +16,6 @@
 #include "src/HttpServer/Structs/WebServer.hpp"
 #include "src/Utils/ServerUtils.hpp"
 
-/* Request handlers */ // deprecated
-void WebServer::handleRequestTooLarge(Connection *conn, ssize_t bytes_read) {
-	_lggr.info("Reached max content length for fd: " + su::to_string(conn->fd) + ", " +
-	           su::to_string(bytes_read) + "/" + su::to_string(conn->locConfig->getMaxBodySize()));
-	prepareResponse(conn, Response(413, conn));
-}
 
 bool WebServer::handleCompleteRequest(Connection *conn) {
 	processRequest(conn);
@@ -111,7 +105,7 @@ bool WebServer::isHeadersComplete(Connection *conn) {
 
 		// ERROR handling if Body present when it should not
 		if (conn->content_length <= 0 && conn->body_bytes_read != 0) {
-			_lggr.debug("Body present when it should not: send 400");
+			_lggr.error("Body present when it should not (400)");
 			prepareResponse(conn, Response(400, conn));
 			conn->should_close = true;
 			conn->state = Connection::REQUEST_COMPLETE;
@@ -136,7 +130,7 @@ bool WebServer::isHeadersComplete(Connection *conn) {
 			if (static_cast<ssize_t>(conn->body_data.size()) > conn->content_length) {
 				conn->state = Connection::REQUEST_COMPLETE;	
 				prepareResponse(conn, Response(400));
-				_lggr.debug("Content length mismatch" + req.body);
+				_lggr.error("Content length mismatch: " + req.body);
 				conn->should_close = true;
 				return true;
 			}

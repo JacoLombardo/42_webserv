@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/19 18:29:33 by htharrau          #+#    #+#             */
-/*   Updated: 2025/08/25 15:00:03 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/26 10:30:54 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,17 +19,17 @@
 bool WebServer::handleFileSystemErrors(FileType file_type, const std::string &full_path,
                                        Connection *conn) {
 	if (file_type == NOT_FOUND_404) {
-		_lggr.debug("[Resp] Could not open : " + full_path);
+		_lggr.error("[Resp] Could not open : " + full_path);
 		prepareResponse(conn, Response::notFound(conn));
 		return false;
 	}
 	if (file_type == PERMISSION_DENIED_403) {
-		_lggr.debug("[Resp] Permission denied : " + full_path);
+		_lggr.error("[Resp] Permission denied : " + full_path);
 		prepareResponse(conn, Response::forbidden(conn));
 		return false;
 	}
 	if (file_type == FILE_SYSTEM_ERROR_500) {
-		_lggr.debug("[Resp] Other file access problem : " + full_path);
+		_lggr.error("[Resp] Other file access problem : " + full_path);
 		prepareResponse(conn, Response::internalServerError(conn));
 		return false;
 	}
@@ -43,7 +43,7 @@ void WebServer::handleDirectoryRequest(ClientRequest &req, Connection *conn, boo
 	_lggr.debug("Directory request: " + full_path);
 
 	if (!end_slash) {
-		_lggr.debug("Directory request without trailing slash, redirecting to : " + req.path + "/");
+		_lggr.info("Directory request without trailing slash, redirecting to : " + req.path + "/");
 		std::string redirectPath = req.path + "/";
 		prepareResponse(conn, respReturnDirective(conn, 301, redirectPath));
 		return;
@@ -60,7 +60,7 @@ void WebServer::handleFileRequest(ClientRequest &req, Connection *conn, bool end
 
 	// Trailing '/'? Redirect
 	if (end_slash) { //&& !conn->locConfig->is_exact_()
-		_lggr.debug("File request with trailing slash, redirecting: " + req.path);
+		_lggr.info("File request with trailing slash, redirecting: " + req.path);
 		std::string redirectPath = req.path.substr(0, req.path.length() - 1);
 		prepareResponse(conn, respReturnDirective(conn, 301, redirectPath));
 		return;
@@ -86,7 +86,7 @@ void WebServer::handleFileRequest(ClientRequest &req, Connection *conn, bool end
 		prepareResponse(conn, respFileRequest(conn, full_path));
 		return;
 	} else {
-		_lggr.debug("Non-GET request for static file - not implemented");
+		_lggr.error("Non-GET request for static file - not implemented");
 		prepareResponse(
 		    conn, Response::methodNotAllowed(conn, conn->locConfig->getAllowedMethodsString()));
 		return;

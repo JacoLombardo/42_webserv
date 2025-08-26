@@ -38,6 +38,38 @@ FORBIDDEN="GET /../../ HTTP/1.1\r\nHost: $HOST\r\n\r\n"
 
 
 
+# Additional conflicting header test cases
+MULTI_CL_DIFF="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nContent-Length: 5\r\nContent-Length: 10\r\n\r\nHello"
+CL_TE_BOTH="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nContent-Length: 13\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nHello\r\n0\r\n\r\n"
+TE_CL_REVERSE="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nTransfer-Encoding: chunked\r\nContent-Length: 5\r\n\r\n5\r\nHello\r\n0\r\n\r\n"
+MULTI_TE="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nTransfer-Encoding: chunked\r\nTransfer-Encoding: gzip\r\n\r\n5\r\nHello\r\n0\r\n\r\n"
+CL_ZERO_WITH_BODY="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nContent-Length: 0\r\n\r\nHello"
+TE_IDENTITY="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nTransfer-Encoding: identity\r\n\r\nHello"
+TE_CHUNKED_IDENTITY="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nTransfer-Encoding: chunked, identity\r\n\r\n5\r\nHello\r\n0\r\n\r\n"
+INVALID_CHUNKED="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nTransfer-Encoding: chunked\r\n\r\nZZ\r\nHello\r\n0\r\n\r\n"
+CHUNKED_NO_FINAL="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nHello\r\n5\r\nWorld"
+CL_NEGATIVE="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nContent-Length: -5\r\n\r\nHello"
+CL_LEADING_ZERO="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nContent-Length: 005\r\n\r\nHello"
+CL_WHITESPACE="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nContent-Length:  5 \r\n\r\nHello"
+NO_CL_NO_TE="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\n\r\nHello World"
+EXPECT_CONTINUE="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nContent-Length: 5\r\nExpect: 100-continue\r\n\r\nHello"
+CL_WITH_GET="GET /test HTTP/1.1\r\nHost: $HOST\r\nContent-Length: 5\r\n\r\n"
+TE_WITH_GET="GET /test HTTP/1.1\r\nHost: $HOST\r\nTransfer-Encoding: chunked\r\n\r\n"
+
+# Connection header conflicts
+CONN_CLOSE_KEEPALIVE="GET / HTTP/1.1\r\nHost: $HOST\r\nConnection: close\r\nConnection: keep-alive\r\n\r\n"
+CONN_UPGRADE_CLOSE="GET / HTTP/1.1\r\nHost: $HOST\r\nConnection: upgrade\r\nConnection: close\r\n\r\n"
+
+# Content-Type conflicts
+MULTI_CONTENT_TYPE="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nContent-Length: 5\r\nContent-Type: text/plain\r\nContent-Type: application/json\r\n\r\nHello"
+
+# Malformed chunked encoding variations
+CHUNKED_MISSING_CRLF="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nHello0\r\n\r\n"
+CHUNKED_EXTRA_DATA="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nHello\r\n0\r\n\r\nExtra"
+CHUNKED_INVALID_SIZE="POST /cgi-bin/ HTTP/1.1\r\nHost: $HOST\r\nTransfer-Encoding: chunked\r\n\r\nG\r\nHello\r\n0\r\n\r\n"
+
+
+
 # ========== FUNCTIONS ==========
 
 send_request() {
@@ -95,6 +127,35 @@ run_test "Not Implemented (501)"           "501" "$NOT_IMPLEMENTED"
 run_test "Transversal attack (403)"        "403" "$FORBIDDEN"
 
 # ========== SUMMARY ==========
+
+
+# Run additional conflict tests
+echo ""
+echo "Additional Header Conflict Tests:"
+echo "================================="
+run_test "Different Content-Length values" "400" "$MULTI_CL_DIFF"
+run_test "Content-Length + Transfer-Encoding (both)" "400" "$CL_TE_BOTH"
+run_test "Transfer-Encoding + Content-Length (reverse)" "400" "$TE_CL_REVERSE"
+run_test "Multiple Transfer-Encoding headers" "400" "$MULTI_TE"
+run_test "Content-Length: 0 with body" "400" "$CL_ZERO_WITH_BODY"
+run_test "Transfer-Encoding: identity" "400" "$TE_IDENTITY"
+run_test "Transfer-Encoding: chunked, identity" "400" "$TE_CHUNKED_IDENTITY"
+run_test "Invalid chunked size format" "400" "$INVALID_CHUNKED"
+run_test "Chunked without final chunk" "400" "$CHUNKED_NO_FINAL"
+run_test "Negative Content-Length" "400" "$CL_NEGATIVE"
+run_test "Content-Length with leading zeros" "200" "$CL_LEADING_ZERO"
+run_test "Content-Length with whitespace" "200" "$CL_WHITESPACE"
+run_test "POST without length indicators" "400" "$NO_CL_NO_TE"
+run_test "Expect: 100-continue" "100" "$EXPECT_CONTINUE"
+run_test "GET with Content-Length" "400" "$CL_WITH_GET"
+run_test "GET with Transfer-Encoding" "400" "$TE_WITH_GET"
+run_test "Conflicting Connection headers" "400" "$CONN_CLOSE_KEEPALIVE"
+run_test "Connection upgrade + close" "400" "$CONN_UPGRADE_CLOSE"
+run_test "Multiple Content-Type headers" "400" "$MULTI_CONTENT_TYPE"
+run_test "Chunked missing CRLF" "400" "$CHUNKED_MISSING_CRLF"
+run_test "Chunked with extra data" "400" "$CHUNKED_EXTRA_DATA"
+run_test "Chunked invalid hex size" "400" "$CHUNKED_INVALID_SIZE"
+
 
 echo -e "\n${BOLD}========== SUMMARY ==========${RESET}"
 echo -e "${GREEN}Passed: $PASS_COUNT${RESET}"

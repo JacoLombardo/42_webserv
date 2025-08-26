@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/08 12:56:57 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/26 10:12:15 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/26 10:29:53 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,7 @@ bool WebServer::processValidRequestChecks(ClientRequest &req, Connection *conn) 
 
 	// check if RETURN directive in the matched location
 	if (conn->locConfig->hasReturn() && conn->locConfig->path == req.path) {
-		_lggr.debug("[Resp] The matched location has a return directive.");
+		_lggr.info("[Resp] The matched location has a return directive.");
 		uint16_t code = conn->locConfig->return_code;
 		std::string target = conn->locConfig->return_target;
 		prepareResponse(conn, respReturnDirective(conn, code, target));
@@ -96,7 +96,7 @@ bool WebServer::processValidRequestChecks(ClientRequest &req, Connection *conn) 
 	if ((req.content_length != -1) && !conn->locConfig->infiniteBodySize() &&
 	    static_cast<size_t>(req.content_length) > conn->locConfig->getMaxBodySize()) {
 		_lggr.logWithPrefix(
-		    Logger::WARNING, "HTTP",
+		    Logger::ERROR, "HTTP",
 		    "Request body too large: " + su::humanReadableBytes(req.content_length) +
 		        " bytes exceeds limit of " +
 		        su::humanReadableBytes(conn->locConfig->getMaxBodySize()));
