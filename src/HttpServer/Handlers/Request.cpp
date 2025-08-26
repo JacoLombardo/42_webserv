@@ -6,7 +6,7 @@
 /*   By: htharrau <htharrau@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/07 14:10:22 by jalombar          #+#    #+#             */
-/*   Updated: 2025/08/26 10:28:36 by htharrau         ###   ########.fr       */
+/*   Updated: 2025/08/26 10:51:33 by htharrau         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,6 @@
 #include "src/HttpServer/Structs/WebServer.hpp"
 #include "src/Utils/ServerUtils.hpp"
 
-
 bool WebServer::handleCompleteRequest(Connection *conn) {
 	processRequest(conn);
 
@@ -24,7 +23,7 @@ bool WebServer::handleCompleteRequest(Connection *conn) {
 	conn->read_buffer.clear();
 	conn->request_count++;
 	conn->updateActivity();
-	return true; 
+	return true;
 }
 
 uint16_t WebServer::handleCGIRequest(ClientRequest &req, Connection *conn) {
@@ -92,16 +91,18 @@ bool WebServer::isHeadersComplete(Connection *conn) {
 	conn->chunked = req.chunked_encoding;
 	conn->content_length = req.content_length;
 
-	if (!conn->chunked) { 	//Store remaining data as binary body data for Content-Length requests
+	if (!conn->chunked) { // Store remaining data as binary body data for Content-Length requests
 
 		if (!remaining_data.empty() && conn->content_length > 0) {
 			conn->body_data.insert(conn->body_data.end(),
-								reinterpret_cast<const unsigned char *>(remaining_data.data()),
-								reinterpret_cast<const unsigned char *>(remaining_data.data() + remaining_data.size()));
+			                       reinterpret_cast<const unsigned char *>(remaining_data.data()),
+			                       reinterpret_cast<const unsigned char *>(remaining_data.data() +
+			                                                               remaining_data.size()));
 			conn->body_bytes_read = conn->body_data.size();
 		}
 		_lggr.debug("Request POST HEADER content length: " + su::to_string(conn->content_length));
-		_lggr.debug("Request POST HEADER remaining data size: " + su::to_string(remaining_data.size()));
+		_lggr.debug("Request POST HEADER remaining data size: " +
+		            su::to_string(remaining_data.size()));
 
 		// ERROR handling if Body present when it should not
 		if (conn->content_length <= 0 && conn->body_bytes_read != 0) {
@@ -111,7 +112,7 @@ bool WebServer::isHeadersComplete(Connection *conn) {
 			conn->state = Connection::REQUEST_COMPLETE;
 			return true;
 		}
-		
+
 		// Case : content_length 0 or no content length)
 		if (conn->content_length <= 0) {
 			conn->state = Connection::REQUEST_COMPLETE;
@@ -122,13 +123,13 @@ bool WebServer::isHeadersComplete(Connection *conn) {
 			conn->state = Connection::READING_BODY;
 			// check if full body
 			if (static_cast<ssize_t>(conn->body_data.size()) == conn->content_length) {
-				conn->state = Connection::REQUEST_COMPLETE;	
-				// req.body = reconstructRequest(conn); 
+				conn->state = Connection::REQUEST_COMPLETE;
+				// req.body = reconstructRequest(conn);
 				_lggr.debug("1 req.body" + req.body);
 				return true;
 			}
 			if (static_cast<ssize_t>(conn->body_data.size()) > conn->content_length) {
-				conn->state = Connection::REQUEST_COMPLETE;	
+				conn->state = Connection::REQUEST_COMPLETE;
 				prepareResponse(conn, Response(400));
 				_lggr.error("Content length mismatch: " + req.body);
 				conn->should_close = true;
@@ -139,8 +140,8 @@ bool WebServer::isHeadersComplete(Connection *conn) {
 			return false;
 		}
 	}
-	
-	else { // CHUNKED - store remaining data as string 
+
+	else { // CHUNKED - store remaining data as string
 		conn->state = Connection::READING_CHUNK_SIZE;
 		conn->read_buffer = remaining_data; // Keep any data after headers for chunk processing
 		conn->chunk_size = 0;
@@ -154,7 +155,6 @@ bool WebServer::isHeadersComplete(Connection *conn) {
 	return true;
 }
 
-
 bool WebServer::isRequestComplete(Connection *conn) {
 
 	switch (conn->state) {
@@ -166,9 +166,9 @@ bool WebServer::isRequestComplete(Connection *conn) {
 	case Connection::READING_BODY:
 		_lggr.debug("isRequestComplete->READING_BODY");
 		_lggr.debug(
-			su::to_string(conn->content_length - static_cast<ssize_t>(conn->body_data.size())) +
-			" bytes left to receive");
-					
+		    su::to_string(conn->content_length - static_cast<ssize_t>(conn->body_data.size())) +
+		    " bytes left to receive");
+
 		if (static_cast<ssize_t>(conn->body_data.size()) == conn->content_length) {
 			_lggr.debug("Read full content-length: " + su::to_string(conn->body_data.size()) +
 			            " bytes received");
@@ -248,13 +248,12 @@ bool WebServer::parseRequest(Connection *conn, ClientRequest &req) {
 	return true;
 }
 
-
 void WebServer::processRequest(Connection *conn) {
 	_lggr.info("Processing request from fd: " + su::to_string(conn->fd));
 
 	ClientRequest req = conn->parsed_request;
-	
-	 // Handle body extraction differently for chunked vs non-chunked
+
+	// Handle body extraction differently for chunked vs non-chunked
 	if (req.chunked_encoding) {
 		// For chunked requests, use the reconstructed chunk data
 		req.body = conn->chunk_data;
@@ -265,21 +264,22 @@ void WebServer::processRequest(Connection *conn) {
 		_lggr.debug("No body data or headers not properly parsed");
 		req.body = "";
 	}
-	
+
 	_lggr.debug("req.body: " + req.body);
 	_lggr.debug("req.headers: " + conn->headers_buffer);
 	_lggr.debug("req.uri: " + req.uri);
 
 	// For chunked requests: use of chunk_data length for content verification
 	size_t actual_body_size = req.chunked_encoding ? conn->chunk_data.size() : req.body.size();
-	
-	_lggr.debug("[Resp] Payload vs content size: " + su::to_string(req.content_length) 
-		            + ", payload size: " + su::to_string(actual_body_size) );
-	
+
+	_lggr.debug("[Resp] Payload vs content size: " + su::to_string(req.content_length) +
+	            ", payload size: " + su::to_string(actual_body_size));
+
 	// Only verify content-length for non-chunked requests
-	if (!req.chunked_encoding && req.content_length >= 0 && static_cast<ssize_t>(actual_body_size) != req.content_length) {
-		_lggr.error("[Resp] Payload mismatch, content size: " + su::to_string(req.content_length) 
-		            + ", payload size: " + su::to_string(actual_body_size) );
+	if (!req.chunked_encoding && req.content_length >= 0 &&
+	    static_cast<ssize_t>(actual_body_size) != req.content_length) {
+		_lggr.error("[Resp] Payload mismatch, content size: " + su::to_string(req.content_length) +
+		            ", payload size: " + su::to_string(actual_body_size));
 		prepareResponse(conn, Response::contentTooLarge(conn));
 		return;
 	}
@@ -289,13 +289,13 @@ void WebServer::processRequest(Connection *conn) {
 	processValidRequest(req, conn);
 }
 
-
 void WebServer::processValidRequest(ClientRequest &req, Connection *conn) {
-		
-	const std::string& full_path = conn->locConfig->getFullPath();
-	_lggr.debug("[Resp] The matched location is an exact match: " + su::to_string(conn->locConfig->is_exact_()));
-	
-	// File system check 
+
+	const std::string &full_path = conn->locConfig->getFullPath();
+	_lggr.debug("[Resp] The matched location is an exact match: " +
+	            su::to_string(conn->locConfig->is_exact_()));
+
+	// File system check
 	FileType file_type = checkFileType(full_path);
 	_lggr.debug("[Resp] checkFileType for " + full_path + " is " + fileTypeToString(file_type));
 
@@ -306,7 +306,7 @@ void WebServer::processValidRequest(ClientRequest &req, Connection *conn) {
 			file_type = ISREG;
 		}
 	}
-	
+
 	// File system errors
 	if (!handleFileSystemErrors(file_type, full_path, conn))
 		return;
