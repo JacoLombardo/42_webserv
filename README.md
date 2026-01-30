@@ -1,75 +1,76 @@
-## Simple HTTP Web Server in C++98
+# webserv
 
-Lightweight HTTP web server implemented in C++98, designed to provide a straightforward yet robust solution for serving web content and handling basic HTTP requests.
+webserv is a 42 School project that implements an HTTP/1.1 server in C++98. It serves static files, handles CGI scripts, and uses a configuration file (nginx-style) to define servers, ports, and behavior.
 
----
+## Overview
 
-**Key Features**
+The goal is to build a multi-server HTTP daemon that can handle GET, POST, and DELETE, serve static content, run CGI (e.g. PHP, Python), and manage concurrent connections with non-blocking I/O (epoll on Linux).
 
-- **C++98 Compatibility:** Written entirely in C++98
-- **HTTP/1.1 Support:** Handles core HTTP/1.1 methods, including GET, POST, and DELETE
-- **Static File Serving:** Serves static files from a configurable root directory
-- **Configurable Server:** Uses a configuration file (nginx-style) to define server behavior, ports, document roots, error pages, and more
-- **Concurrent Connections:** Supports multiple simultaneous client connections using non-blocking I/O
-- **Custom Error Pages:** Allows definition of custom error pages
-- **CGI Support:** Can execute CGI scripts for dynamic content generation
-- **Simple Build & Run:** Minimal dependencies; just a C++98-compatible compiler and a Linux OS (for epoll)
+## Composition
 
----
+- **src/HttpServer/** — server core, connections, request/response lifecycle
+- **src/ConfigParser/** — parses config file, server/location directives
+- **src/RequestParser/** — HTTP request parsing (line, headers, body)
+- **src/CGI/** — CGI handler and execution
+- **src/Logger/** — logging
+- **includes/** — Webserv.hpp, Types.hpp
+- **www/** — default static files and error pages
+- **cgi-bin/** — sample PHP and Python scripts
+- **config_example/** — example configuration
 
-**Getting Started**
+## Features
 
-**Prerequisites**
-- C++98-compatible compiler (e.g., g++)
-- Linux OS (tested on Arch and Ubuntu)
+- **HTTP/1.1** — GET, POST, DELETE (and others per config)
+- **Static file serving** — configurable document roots
+- **CGI support** — PHP, Python, etc.
+- **Config file** — nginx-style (listen, server_name, location, root, error_page)
+- **Concurrent connections** — epoll, non-blocking I/O
+- **Custom error pages** — 400, 401, 403, 404, 405, 413
+- **Chunked transfer** — request/response
 
-**Building the Project**
-```sh
+## Technology
+
+- C++98
+- Linux epoll
+- No external dependencies beyond standard library
+
+## Setup
+
+Build:
+
+```bash
 make
 ```
 
-**Running the Server**
-```sh
-./webserv [configuration_file]
+Run:
+
+```bash
+./webserv [config_file]
 ```
 
-**Accessing the Server**
-- Open your browser and navigate to `http://localhost:PORT/`
-- Or use `curl` for command-line testing
+Example:
 
----
+```bash
+./webserv config_example/basic.conf
+```
 
-**Configuration**
+Then open `http://localhost:PORT/` in a browser or use `curl`.
 
-The server uses a configuration file to define its behavior. Example configuration options include:
+## Configuration
 
-- Listening ports
-- Server names
-- Root directory for static files
-- Error pages
-- CGI script paths
+See `config_example/basic.conf` and `ConfigurationGuide.md` for server blocks, locations, root, error pages, and CGI setup.
 
-Refer to the example config file in the repository for details
+## Makefile targets
 
----
+| Target   | Description              |
+|----------|--------------------------|
+| `all`    | Build `webserv`          |
+| `clean`  | Remove object files      |
+| `fclean` | Remove objects and binary |
+| `re`     | Fclean then rebuild      |
 
-**Project Structure**
+## Notes
 
-- **Server Core:** Manages sockets, connections, and the main event loop
-- **Request Parser:** Interprets incoming HTTP requests
-- **Response Builder:** Constructs and sends HTTP responses
-- **Configuration Loader:** Parses and applies server settings
-- **CGI Handler:** Executes CGI scripts for dynamic content
-
----
-
-**License**
-
-This project is open source. See the LICENSE file for details.
-
----
-
-**Acknowledgements**
-
-Inspired by classic web server projects and the 42 curriculum.
-# test_webserv
+- C++98 only
+- Linux required (epoll)
+- Subject typically requires handling of specific HTTP features and config directives
